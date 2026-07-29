@@ -7,8 +7,7 @@ const discord_js_1 = require("discord.js");
 const Application_1 = __importDefault(require("../models/Application"));
 const Answer_1 = __importDefault(require("../models/Answer"));
 const User_1 = __importDefault(require("../models/User"));
-const QuestionService_1 = __importDefault(require("./QuestionService"));
-const config_1 = __importDefault(require("../config/config"));
+const RPForms_1 = require("../core/RPForms");
 class StaffReviewService {
     static async submitApplication(interaction, client, appId) {
         await interaction.deferUpdate(); // Defer update to prevent timeout
@@ -18,10 +17,13 @@ class StaffReviewService {
         const applicant = interaction.user;
         // Fetch application and answers
         const app = await Application_1.default.getApplicationById(appId);
+        if (!app)
+            return;
         const answers = await Answer_1.default.getAnswers(appId);
-        const questions = QuestionService_1.default.getQuestions();
+        const form = RPForms_1.RPForms.forms.getForm('allowlist');
+        const questions = form ? form.questions : [];
         // Get the review channel where all applications will be posted
-        const staffChannelId = config_1.default.channels.staffReviewChannel || config_1.default.channels.applicationCategory;
+        const staffChannelId = RPForms_1.RPForms.config.getAll().channels.staffReviewChannel || RPForms_1.RPForms.config.getAll().channels.applicationCategory;
         const staffChannel = guild.channels.cache.get(staffChannelId);
         if (!staffChannel) {
             return interaction.editReply({
@@ -35,10 +37,10 @@ class StaffReviewService {
         const embed = new discord_js_1.EmbedBuilder()
             .setTitle('New Application Review')
             .addFields({ name: 'Discord User', value: `${applicant} (${applicant.id})`, inline: true }, { name: 'Application ID', value: `${appId}`, inline: true }, { name: 'Status', value: '🟡 Review', inline: true })
-            .setColor(config_1.default.embeds.colors.warning)
+            .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.warning)
             .setTimestamp();
         for (const q of questions) {
-            const a = answers.find((ans) => ans.question_id === q.id);
+            const a = answers.find((ans) => String(ans.question_id) === String(q.id));
             let displayAnswer = a ? a.answer_text : 'No answer';
             if (displayAnswer.length > 1024)
                 displayAnswer = displayAnswer.substring(0, 1020) + '...';
@@ -55,8 +57,8 @@ class StaffReviewService {
             .setLabel('🟡 Review')
             .setStyle(discord_js_1.ButtonStyle.Secondary));
         // Ping the first staff role found in the config
-        const staffPing = config_1.default.roles.staff && config_1.default.roles.staff.length > 0
-            ? `<@&${config_1.default.roles.staff[0]}>`
+        const staffPing = RPForms_1.RPForms.config.getAll().roles.staff && RPForms_1.RPForms.config.getAll().roles.staff.length > 0
+            ? `<@&${RPForms_1.RPForms.config.getAll().roles.staff[0]}>`
             : '@here';
         await staffChannel.send({
             content: `${staffPing} A new application has been submitted by ${applicant}!`,
@@ -101,7 +103,7 @@ class StaffReviewService {
         await Application_1.default.updateStatus(appId, 'approved');
         // Update original message
         const originalEmbed = discord_js_1.EmbedBuilder.from(interaction.message.embeds[0]);
-        originalEmbed.setColor(config_1.default.embeds.colors.success);
+        originalEmbed.setColor(RPForms_1.RPForms.config.getAll().embeds.colors.success);
         const statusField = originalEmbed.data.fields.find((f) => f.name === 'Status');
         if (statusField)
             statusField.value = '🟢 Approved';
@@ -116,16 +118,16 @@ class StaffReviewService {
         }
         if (member) {
             // Add allowlisted role
-            if (config_1.default.roles.allowlisted) {
-                const role = guild.roles.cache.get(config_1.default.roles.allowlisted);
+            if (RPForms_1.RPForms.config.getAll().roles.allowlisted) {
+                const role = guild.roles.cache.get(RPForms_1.RPForms.config.getAll().roles.allowlisted);
                 if (role)
                     await member.roles
                         .add(role)
                         .catch((err) => console.log('Notice: Missing permissions to add allowlisted role.'));
             }
             // Remove non-whitelisted role
-            if (config_1.default.roles.nonWhitelisted) {
-                const role = guild.roles.cache.get(config_1.default.roles.nonWhitelisted);
+            if (RPForms_1.RPForms.config.getAll().roles.nonWhitelisted) {
+                const role = guild.roles.cache.get(RPForms_1.RPForms.config.getAll().roles.nonWhitelisted);
                 if (role && member.roles.cache.has(role.id)) {
                     await member.roles
                         .remove(role)
@@ -141,9 +143,9 @@ class StaffReviewService {
             value: `<t:${Math.floor(Date.now() / 1000)}:f>`,
             inline: true,
         }, { name: 'Moderator', value: `<@${interaction.user.id}>`, inline: true }, { name: 'Acceptance ID', value: `${appId}`, inline: true })
-            .setColor(config_1.default.embeds.colors.success);
-        if (config_1.default.embeds.banner)
-            acceptedEmbed.setImage(config_1.default.embeds.banner);
+            .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.success);
+        if (RPForms_1.RPForms.config.getAll().embeds.banner)
+            acceptedEmbed.setImage(RPForms_1.RPForms.config.getAll().embeds.banner);
         if (member) {
             // DM User
             try {
@@ -154,8 +156,8 @@ class StaffReviewService {
             }
         }
         // Log to accepted log channel
-        if (config_1.default.channels.acceptedLogChannel) {
-            const channel = guild.channels.cache.get(config_1.default.channels.acceptedLogChannel);
+        if (RPForms_1.RPForms.config.getAll().channels.acceptedLogChannel) {
+            const channel = guild.channels.cache.get(RPForms_1.RPForms.config.getAll().channels.acceptedLogChannel);
             if (channel)
                 await channel.send({ embeds: [acceptedEmbed] }).catch(() => { });
         }
@@ -175,17 +177,14 @@ class StaffReviewService {
             await Application_1.default.updateStatus(appId, 'rejected');
             // Update original message
             const originalEmbed = discord_js_1.EmbedBuilder.from(interaction.message.embeds[0]);
-            originalEmbed.setColor(config_1.default.embeds.colors.danger);
+            originalEmbed.setColor(RPForms_1.RPForms.config.getAll().embeds.colors.danger);
             const statusField = originalEmbed.data.fields.find((f) => f.name === 'Status');
             if (statusField)
                 statusField.value = '🔴 Rejected';
             await interaction.update({ embeds: [originalEmbed], components: [] });
             // Set cooldown
-            const cooldownMs = config_1.default.settings.cooldown || 86400000;
-            const cooldownUntil = new Date(Date.now() + cooldownMs)
-                .toISOString()
-                .slice(0, 19)
-                .replace('T', ' ');
+            const cooldownMs = RPForms_1.RPForms.config.getAll().settings.cooldown || 86400000;
+            const cooldownUntil = new Date(Date.now() + cooldownMs);
             await User_1.default.setCooldown(app.discord_id, cooldownUntil);
             // Build rejected embed
             const rejectedEmbed = new discord_js_1.EmbedBuilder()
@@ -195,9 +194,9 @@ class StaffReviewService {
                 value: `<t:${Math.floor(Date.now() / 1000)}:f>`,
                 inline: true,
             }, { name: 'Moderator', value: `<@${interaction.user.id}>`, inline: true }, { name: 'Rejection ID', value: `${appId}`, inline: true })
-                .setColor(config_1.default.embeds.colors.danger);
-            if (config_1.default.embeds.banner)
-                rejectedEmbed.setImage(config_1.default.embeds.banner);
+                .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.danger);
+            if (RPForms_1.RPForms.config.getAll().embeds.banner)
+                rejectedEmbed.setImage(RPForms_1.RPForms.config.getAll().embeds.banner);
             if (member) {
                 try {
                     await member.send({ embeds: [rejectedEmbed] });
@@ -205,8 +204,8 @@ class StaffReviewService {
                 catch (e) { }
             }
             // Log to rejected log channel
-            if (config_1.default.channels.rejectedLogChannel) {
-                const channel = guild.channels.cache.get(config_1.default.channels.rejectedLogChannel);
+            if (RPForms_1.RPForms.config.getAll().channels.rejectedLogChannel) {
+                const channel = guild.channels.cache.get(RPForms_1.RPForms.config.getAll().channels.rejectedLogChannel);
                 if (channel)
                     await channel.send({ embeds: [rejectedEmbed] }).catch(() => { });
             }
@@ -217,7 +216,7 @@ class StaffReviewService {
                 const embed = new discord_js_1.EmbedBuilder()
                     .setTitle('Application Requires Changes')
                     .setDescription(`Your application requires changes.\n\n**Reason:**\n${reason}\n\nPlease click the button below to continue your application.`)
-                    .setColor(config_1.default.embeds.colors.warning);
+                    .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.warning);
                 const row = new discord_js_1.ActionRowBuilder().addComponents(new discord_js_1.ButtonBuilder()
                     .setCustomId(`app_continue_${appId}_0`)
                     .setLabel('Continue Application')
@@ -229,7 +228,7 @@ class StaffReviewService {
                     console.log('Could not DM user.');
                 }
             }
-            await this.sendLog(guild, config_1.default.channels.reviewLogChannel, `Application #${appId} Review Requested`, `Applicant: <@${app.discord_id}>\nRequested by: ${interaction.user}\nReason: ${reason}`, config_1.default.embeds.colors.warning);
+            await this.sendLog(guild, RPForms_1.RPForms.config.getAll().channels.reviewLogChannel, `Application #${appId} Review Requested`, `Applicant: <@${app.discord_id}>\nRequested by: ${interaction.user}\nReason: ${reason}`, RPForms_1.RPForms.config.getAll().embeds.colors.warning);
             await interaction.reply({ content: 'Review requested sent to user!' });
         }
     }

@@ -6,4 +6,3 @@ class EventManager extends events_1.EventEmitter {
     constructor() { super(); }
 }
 exports.EventManager = EventManager;
-n;

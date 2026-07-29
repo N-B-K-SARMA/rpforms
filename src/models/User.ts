@@ -1,23 +1,17 @@
-import { getPool } from '../database/pool';
+import { RPForms } from '../core/RPForms';
+import { IUser } from '../interfaces/IDatabaseModels';
 
 class UserModel {
-  static async ensureUser(discordId) {
-    const pool = getPool();
-    await pool.query('INSERT IGNORE INTO users (discord_id) VALUES (?)', [discordId]);
+  static async ensureUser(discordId: string): Promise<void> {
+    await RPForms.database.ensureUser(discordId);
   }
 
-  static async getUser(discordId) {
-    const pool = getPool();
-    const [rows] = await pool.query('SELECT * FROM users WHERE discord_id = ?', [discordId]);
-    return rows[0];
+  static async getUser(discordId: string): Promise<IUser | undefined> {
+    return await RPForms.database.getUser(discordId);
   }
 
-  static async setCooldown(discordId, cooldownUntil) {
-    const pool = getPool();
-    await pool.query('UPDATE users SET cooldown_until = ? WHERE discord_id = ?', [
-      cooldownUntil,
-      discordId,
-    ]);
+  static async setCooldown(discordId: string, cooldownUntil: Date | null): Promise<void> {
+    await RPForms.database.setUserCooldown(discordId, cooldownUntil);
   }
 }
 

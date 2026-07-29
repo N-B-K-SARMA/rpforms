@@ -6,7 +6,9 @@ const ConfigManager_1 = require("./ConfigManager");
 const FormManager_1 = require("./FormManager");
 const ApplicationManager_1 = require("./ApplicationManager");
 const ReviewManager_1 = require("./ReviewManager");
+const MariaDB_1 = require("../database/MariaDB");
 class RPFormsClient {
+    database = new MariaDB_1.MariaDB();
     events = new EventManager_1.EventManager();
     config = new ConfigManager_1.ConfigManager();
     forms = new FormManager_1.FormManager();
@@ -18,4 +20,3 @@ class RPFormsClient {
 }
 exports.RPFormsClient = RPFormsClient;
 exports.RPForms = new RPFormsClient();
-n;

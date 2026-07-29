@@ -4,11 +4,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const discord_js_1 = require("discord.js");
-const QuestionService_1 = __importDefault(require("./QuestionService"));
+const RPForms_1 = require("../core/RPForms");
 const Application_1 = __importDefault(require("../models/Application"));
 const Answer_1 = __importDefault(require("../models/Answer"));
 const User_1 = __importDefault(require("../models/User"));
-const config_1 = __importDefault(require("../config/config"));
 class ApplicationService {
     // Generate the progress bar
     static getProgressBar(current, total) {
@@ -22,7 +21,7 @@ class ApplicationService {
         const userId = interaction.user.id;
         await User_1.default.ensureUser(userId);
         const user = await User_1.default.getUser(userId);
-        if (user.cooldown_until && new Date(user.cooldown_until) > new Date()) {
+        if (user?.cooldown_until && new Date(user.cooldown_until) > new Date()) {
             return interaction.reply({
                 content: `You are on cooldown until <t:${Math.floor(new Date(user.cooldown_until).getTime() / 1000)}:R>.`,
                 ephemeral: true,
@@ -30,7 +29,7 @@ class ApplicationService {
         }
         // Check if user already has the allowlisted role
         const member = interaction.member;
-        if (config_1.default.roles.allowlisted && member.roles.cache.has(config_1.default.roles.allowlisted)) {
+        if (RPForms_1.RPForms.config.getAll().roles.allowlisted && member.roles.cache.has(RPForms_1.RPForms.config.getAll().roles.allowlisted)) {
             return interaction.reply({ content: 'You are already allowlisted!', ephemeral: true });
         }
         let app = await Application_1.default.getActiveApplication(userId);
@@ -41,28 +40,29 @@ class ApplicationService {
         const embed = new discord_js_1.EmbedBuilder()
             .setTitle('Application Process Started')
             .setDescription('You will be presented with several questions.\n\nPlease provide detailed answers.')
-            .setColor(config_1.default.embeds.colors.primary);
+            .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.primary);
         const row = new discord_js_1.ActionRowBuilder().addComponents(new discord_js_1.ButtonBuilder()
-            .setCustomId(`app_continue_${app.id}_0`) // index 0 means question index 0
+            .setCustomId(`app_continue_${app?.id}_0`) // index 0 means question index 0
             .setLabel('Continue')
             .setStyle(discord_js_1.ButtonStyle.Success), new discord_js_1.ButtonBuilder()
-            .setCustomId(`app_cancel_${app.id}`)
+            .setCustomId(`app_cancel_${app?.id}`)
             .setLabel('Cancel Application')
             .setStyle(discord_js_1.ButtonStyle.Danger));
         await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
     }
     // Show a specific question
     static async showQuestion(interaction, appId, qIndex) {
-        const questions = QuestionService_1.default.getQuestions();
+        const form = RPForms_1.RPForms.forms.getForm('allowlist');
+        const questions = form ? form.questions : [];
         if (qIndex >= questions.length) {
             return this.showFinalReview(interaction, appId);
         }
         const question = questions[qIndex];
-        const answer = await Answer_1.default.getAnswer(appId, question.id);
+        const answer = await Answer_1.default.getAnswer(appId, question.id.toString());
         const embed = new discord_js_1.EmbedBuilder()
             .setTitle(`Question ${qIndex + 1} / ${questions.length}`)
             .setDescription(`**${question.question}**\n\n${this.getProgressBar(qIndex + 1, questions.length)}\n\nYour Answer:\n${answer ? answer.answer_text : '*(No answer provided yet)*'}`)
-            .setColor(config_1.default.embeds.colors.primary);
+            .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.primary);
         const row = new discord_js_1.ActionRowBuilder().addComponents(new discord_js_1.ButtonBuilder()
             .setCustomId(`app_prev_${appId}_${qIndex}`)
             .setLabel('⬅ Previous')
@@ -83,9 +83,12 @@ class ApplicationService {
     }
     // Show answer modal
     static async showAnswerModal(interaction, appId, qIndex) {
-        const questions = QuestionService_1.default.getQuestions();
+        const form = RPForms_1.RPForms.forms.getForm('allowlist');
+        const questions = form ? form.questions : [];
         const question = questions[qIndex];
-        const answer = await Answer_1.default.getAnswer(appId, question.id);
+        if (!question)
+            return;
+        const answer = await Answer_1.default.getAnswer(appId, question.id.toString());
         const modal = new discord_js_1.ModalBuilder()
             .setCustomId(`modal_answer_${appId}_${qIndex}`)
             .setTitle(`Question ${qIndex + 1}`);
@@ -101,14 +104,15 @@ class ApplicationService {
     }
     // Show final review
     static async showFinalReview(interaction, appId) {
-        const questions = QuestionService_1.default.getQuestions();
+        const form = RPForms_1.RPForms.forms.getForm('allowlist');
+        const questions = form ? form.questions : [];
         const answers = await Answer_1.default.getAnswers(appId);
         const embed = new discord_js_1.EmbedBuilder()
             .setTitle('Final Review')
             .setDescription('Please review your answers before submitting.')
-            .setColor(config_1.default.embeds.colors.primary);
+            .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.primary);
         for (const q of questions) {
-            const a = answers.find((ans) => ans.question_id === q.id);
+            const a = answers.find((ans) => String(ans.question_id) === String(q.id));
             let displayAnswer = a ? a.answer_text : 'No answer';
             if (displayAnswer.length > 1024)
                 displayAnswer = displayAnswer.substring(0, 1020) + '...';

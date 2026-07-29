@@ -1,8 +1,7 @@
+import { RPForms } from '../core/RPForms';
 import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from 'discord.js';
-import { getPool } from '../database/pool';
 import fs from 'fs';
 import path from 'path';
-import config from '../config/config';
 
 export default {
   data: new SlashCommandBuilder()
@@ -33,12 +32,11 @@ export default {
     ),
 
   async execute(interaction, client) {
-    const pool = getPool();
-    const subcommand = interaction.options.getSubcommand();
+        const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === 'user') {
       const target = interaction.options.getUser('target');
-      const [rows]: any = await pool.query(
+      const [rows]: any = await RPForms.database.query(
         'SELECT * FROM applications WHERE discord_id = ? ORDER BY created_at DESC LIMIT 1',
         [target.id],
       );
@@ -61,11 +59,11 @@ export default {
             inline: true,
           },
         )
-        .setColor(config.embeds.colors.primary as any);
+        .setColor(RPForms.config.getAll().embeds.colors.primary as any);
 
       await interaction.reply({ embeds: [embed], ephemeral: true });
     } else if (subcommand === 'list') {
-      const [rows]: any = await pool.query(
+      const [rows]: any = await RPForms.database.query(
         'SELECT * FROM applications WHERE status = "pending" ORDER BY created_at ASC LIMIT 10',
       );
 
@@ -74,7 +72,7 @@ export default {
 
       const embed = new EmbedBuilder()
         .setTitle('Pending Applications')
-        .setColor(config.embeds.colors.primary as any);
+        .setColor(RPForms.config.getAll().embeds.colors.primary as any);
       let desc = '';
       for (const app of rows) {
         desc += `**ID:** ${app.id} | **User:** <@${app.discord_id}> | **Date:** <t:${Math.floor(new Date(app.created_at).getTime() / 1000)}:R>\n`;
@@ -84,11 +82,11 @@ export default {
       await interaction.reply({ embeds: [embed], ephemeral: true });
     } else if (subcommand === 'delete') {
       const id = interaction.options.getInteger('id');
-      await pool.query('DELETE FROM applications WHERE id = ?', [id]);
+      await RPForms.database.query('DELETE FROM applications WHERE id = ?', [id]);
       await interaction.reply({ content: `Application #${id} has been deleted.`, ephemeral: true });
     } else if (subcommand === 'export') {
-      const [apps]: any = await pool.query('SELECT * FROM applications');
-      const [answers]: any = await pool.query('SELECT * FROM application_answers');
+      const [apps]: any = await RPForms.database.query('SELECT * FROM applications');
+      const [answers]: any = await RPForms.database.query('SELECT * FROM application_answers');
 
       const exportData = apps.map((app) => {
         return {

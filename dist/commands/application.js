@@ -3,11 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const RPForms_1 = require("../core/RPForms");
 const discord_js_1 = require("discord.js");
-const pool_1 = require("../database/pool");
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
-const config_1 = __importDefault(require("../config/config"));
 exports.default = {
     data: new discord_js_1.SlashCommandBuilder()
         .setName('application')
@@ -24,11 +23,10 @@ exports.default = {
         .addIntegerOption((option) => option.setName('id').setDescription('Application ID').setRequired(true)))
         .addSubcommand((subcommand) => subcommand.setName('export').setDescription('Export applications to JSON')),
     async execute(interaction, client) {
-        const pool = (0, pool_1.getPool)();
         const subcommand = interaction.options.getSubcommand();
         if (subcommand === 'user') {
             const target = interaction.options.getUser('target');
-            const [rows] = await pool.query('SELECT * FROM applications WHERE discord_id = ? ORDER BY created_at DESC LIMIT 1', [target.id]);
+            const [rows] = await RPForms_1.RPForms.database.query('SELECT * FROM applications WHERE discord_id = ? ORDER BY created_at DESC LIMIT 1', [target.id]);
             if (rows.length === 0)
                 return interaction.reply({
                     content: 'No applications found for this user.',
@@ -42,16 +40,16 @@ exports.default = {
                 value: `<t:${Math.floor(new Date(app.created_at).getTime() / 1000)}:R>`,
                 inline: true,
             })
-                .setColor(config_1.default.embeds.colors.primary);
+                .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.primary);
             await interaction.reply({ embeds: [embed], ephemeral: true });
         }
         else if (subcommand === 'list') {
-            const [rows] = await pool.query('SELECT * FROM applications WHERE status = "pending" ORDER BY created_at ASC LIMIT 10');
+            const [rows] = await RPForms_1.RPForms.database.query('SELECT * FROM applications WHERE status = "pending" ORDER BY created_at ASC LIMIT 10');
             if (rows.length === 0)
                 return interaction.reply({ content: 'No pending applications.', ephemeral: true });
             const embed = new discord_js_1.EmbedBuilder()
                 .setTitle('Pending Applications')
-                .setColor(config_1.default.embeds.colors.primary);
+                .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.primary);
             let desc = '';
             for (const app of rows) {
                 desc += `**ID:** ${app.id} | **User:** <@${app.discord_id}> | **Date:** <t:${Math.floor(new Date(app.created_at).getTime() / 1000)}:R>\n`;
@@ -61,12 +59,12 @@ exports.default = {
         }
         else if (subcommand === 'delete') {
             const id = interaction.options.getInteger('id');
-            await pool.query('DELETE FROM applications WHERE id = ?', [id]);
+            await RPForms_1.RPForms.database.query('DELETE FROM applications WHERE id = ?', [id]);
             await interaction.reply({ content: `Application #${id} has been deleted.`, ephemeral: true });
         }
         else if (subcommand === 'export') {
-            const [apps] = await pool.query('SELECT * FROM applications');
-            const [answers] = await pool.query('SELECT * FROM application_answers');
+            const [apps] = await RPForms_1.RPForms.database.query('SELECT * FROM applications');
+            const [answers] = await RPForms_1.RPForms.database.query('SELECT * FROM application_answers');
             const exportData = apps.map((app) => {
                 return {
                     id: app.id,

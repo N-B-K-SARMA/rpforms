@@ -14,4 +14,3 @@ class EmbedBuilder extends discord_js_1.EmbedBuilder {
     }
 }
 exports.EmbedBuilder = EmbedBuilder;
-n;

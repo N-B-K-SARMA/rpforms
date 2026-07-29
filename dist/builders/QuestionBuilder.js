@@ -6,4 +6,3 @@ class QuestionBuilder extends discord_js_1.TextInputBuilder {
     constructor() { super(); this.setStyle(discord_js_1.TextInputStyle.Paragraph); }
 }
 exports.QuestionBuilder = QuestionBuilder;
-n;

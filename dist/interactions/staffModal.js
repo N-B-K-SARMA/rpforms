@@ -1,9 +1,6 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const StaffReviewService_1 = __importDefault(require("../services/StaffReviewService"));
+const RPForms_1 = require("../core/RPForms");
 exports.default = {
     id: 'staffmodal_',
     type: 'modal_prefix',
@@ -11,6 +8,27 @@ exports.default = {
         const parts = interaction.customId.split('_');
         const action = parts[1]; // reject, review
         const appId = parseInt(parts[2]);
-        await StaffReviewService_1.default.processModal(interaction, client, action, appId);
+        const reason = interaction.fields.getTextInputValue('reasonText');
+        const request = {
+            appId,
+            action,
+            staffId: interaction.user.id,
+            reason
+        };
+        const result = await RPForms_1.RPForms.reviews.handleModal(request);
+        if (result.success) {
+            if (action === 'reject') {
+                const originalEmbed = interaction.message.embeds[0];
+                const updatedEmbed = { ...originalEmbed.data };
+                updatedEmbed.color = RPForms_1.RPForms.config.getAll().embeds.colors.danger;
+                const statusField = updatedEmbed.fields.find((f) => f.name === 'Status');
+                if (statusField)
+                    statusField.value = '🔴 Rejected';
+                await interaction.update({ embeds: [updatedEmbed], components: [] });
+            }
+            else if (action === 'review') {
+                await interaction.reply({ content: 'Review requested sent to user!', ephemeral: true });
+            }
+        }
     },
 };

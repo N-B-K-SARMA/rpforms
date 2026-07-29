@@ -1,6 +1,6 @@
+import { RPForms } from '../core/RPForms';
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
-import { getPool } from './pool';
 dotenv.config();
 
 export async function initDatabase() {
@@ -20,14 +20,11 @@ export async function initDatabase() {
     console.log('✓ Database Ready');
     await connection.end();
 
-    // 2. Now use the pool which has the database configured
-    const pool = getPool();
-
+    // 2. Initialize connection in our abstraction (pool is auto-initialized internally via core module if needed)
+    
     // 3. Create tables
-    await createTables(pool);
+    await createTables();
     console.log('✓ Tables Checked');
-
-    return pool;
   } catch (error) {
     console.error('Database connection failed. Exiting...');
     console.error(error);
@@ -35,7 +32,7 @@ export async function initDatabase() {
   }
 }
 
-async function createTables(pool: any) {
+async function createTables() {
   const queries = [
     `CREATE TABLE IF NOT EXISTS settings (
             \`key\` VARCHAR(255) PRIMARY KEY,
@@ -62,7 +59,7 @@ async function createTables(pool: any) {
     `CREATE TABLE IF NOT EXISTS application_answers (
             id INT AUTO_INCREMENT PRIMARY KEY,
             application_id INT NOT NULL,
-            question_id INT NOT NULL,
+            question_id VARCHAR(255) NOT NULL,
             answer_text TEXT,
             FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE,
             UNIQUE KEY unique_answer (application_id, question_id)
@@ -89,6 +86,6 @@ async function createTables(pool: any) {
   ];
 
   for (const query of queries) {
-    await pool.query(query);
+    await RPForms.database.query(query);
   }
 }

@@ -1,23 +1,33 @@
-import ApplicationService from '../services/ApplicationService';
-import AnswerModel from '../models/Answer';
-import QuestionService from '../services/QuestionService';
+import { RPForms } from '../core/RPForms';
 
 export default {
   id: 'modal_answer_',
   type: 'modal_prefix',
 
-  async execute(interaction, client) {
+  async execute(interaction: any, client: any) {
     const parts = interaction.customId.split('_');
     const appId = parseInt(parts[2]);
     const qIndex = parseInt(parts[3]);
 
     const answerText = interaction.fields.getTextInputValue('answerText');
-    const question = QuestionService.getQuestions()[qIndex];
 
-    // Save answer
-    await AnswerModel.saveAnswer(appId, question.id, answerText);
+    await RPForms.applications.answerQuestion({
+      userId: interaction.user.id,
+      appId,
+      qIndex,
+      answerText
+    });
 
-    // Update embed to show the answered question
-    await ApplicationService.showQuestion(interaction, appId, qIndex);
+    const result = await RPForms.applications.showQuestion({
+      userId: interaction.user.id,
+      appId,
+      qIndex
+    });
+
+    if (result && result.ui) {
+      await interaction.update(result.ui);
+    } else {
+      await interaction.update({ content: 'Question not found.', embeds: [], components: [] });
+    }
   },
 };

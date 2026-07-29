@@ -6,4 +6,3 @@ class ButtonBuilder extends discord_js_1.ButtonBuilder {
     constructor() { super(); }
 }
 exports.ButtonBuilder = ButtonBuilder;
-n;

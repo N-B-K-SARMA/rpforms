@@ -1,32 +1,17 @@
-import { getPool } from '../database/pool';
+import { RPForms } from '../core/RPForms';
+import { IAnswer } from '../interfaces/IDatabaseModels';
 
 class AnswerModel {
-  static async saveAnswer(applicationId, questionId, answerText) {
-    const pool = getPool();
-    await pool.query(
-      `INSERT INTO application_answers (application_id, question_id, answer_text) 
-             VALUES (?, ?, ?) 
-             ON DUPLICATE KEY UPDATE answer_text = VALUES(answer_text)`,
-      [applicationId, questionId, answerText],
-    );
+  static async saveAnswer(applicationId: number, questionId: string, answerText: string): Promise<void> {
+    await RPForms.database.saveAnswer(applicationId, questionId, answerText);
   }
 
-  static async getAnswers(applicationId) {
-    const pool = getPool();
-    const [rows] = await pool.query(
-      'SELECT * FROM application_answers WHERE application_id = ? ORDER BY question_id ASC',
-      [applicationId],
-    );
-    return rows;
+  static async getAnswers(applicationId: number): Promise<IAnswer[]> {
+    return await RPForms.database.getAnswers(applicationId);
   }
 
-  static async getAnswer(applicationId, questionId) {
-    const pool = getPool();
-    const [rows] = await pool.query(
-      'SELECT * FROM application_answers WHERE application_id = ? AND question_id = ?',
-      [applicationId, questionId],
-    );
-    return rows[0];
+  static async getAnswer(applicationId: number, questionId: string): Promise<IAnswer | undefined> {
+    return await RPForms.database.getAnswer(applicationId, questionId);
   }
 }
 

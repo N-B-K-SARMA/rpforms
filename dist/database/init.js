@@ -4,9 +4,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.initDatabase = initDatabase;
+const RPForms_1 = require("../core/RPForms");
 const promise_1 = __importDefault(require("mysql2/promise"));
 const dotenv_1 = __importDefault(require("dotenv"));
-const pool_1 = require("./pool");
 dotenv_1.default.config();
 async function initDatabase() {
     try {
@@ -22,12 +22,10 @@ async function initDatabase() {
         await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
         console.log('✓ Database Ready');
         await connection.end();
-        // 2. Now use the pool which has the database configured
-        const pool = (0, pool_1.getPool)();
+        // 2. Initialize connection in our abstraction (pool is auto-initialized internally via core module if needed)
         // 3. Create tables
-        await createTables(pool);
+        await createTables();
         console.log('✓ Tables Checked');
-        return pool;
     }
     catch (error) {
         console.error('Database connection failed. Exiting...');
@@ -35,7 +33,7 @@ async function initDatabase() {
         process.exit(1);
     }
 }
-async function createTables(pool) {
+async function createTables() {
     const queries = [
         `CREATE TABLE IF NOT EXISTS settings (
             \`key\` VARCHAR(255) PRIMARY KEY,
@@ -59,7 +57,7 @@ async function createTables(pool) {
         `CREATE TABLE IF NOT EXISTS application_answers (
             id INT AUTO_INCREMENT PRIMARY KEY,
             application_id INT NOT NULL,
-            question_id INT NOT NULL,
+            question_id VARCHAR(255) NOT NULL,
             answer_text TEXT,
             FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE,
             UNIQUE KEY unique_answer (application_id, question_id)
@@ -83,6 +81,6 @@ async function createTables(pool) {
         )`,
     ];
     for (const query of queries) {
-        await pool.query(query);
+        await RPForms_1.RPForms.database.query(query);
     }
 }

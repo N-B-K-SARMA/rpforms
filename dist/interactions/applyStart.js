@@ -1,13 +1,20 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const ApplicationService_1 = __importDefault(require("../services/ApplicationService"));
+const RPForms_1 = require("../core/RPForms");
 exports.default = {
     id: 'apply_start',
-    type: 'button_prefix', // Exact match fallback handled by custom logic in interactionCreate
+    type: 'button_prefix',
     async execute(interaction, client) {
-        await ApplicationService_1.default.startApplication(interaction);
+        const memberRoles = interaction.member.roles.cache.map((r) => r.id);
+        const result = await RPForms_1.RPForms.applications.startApplication({
+            userId: interaction.user.id,
+            formId: 'allowlist'
+        }, memberRoles);
+        if (result.error) {
+            await interaction.reply({ content: result.message, ephemeral: true });
+        }
+        else {
+            await interaction.reply({ ...result.ui, ephemeral: true });
+        }
     },
 };

@@ -6,4 +6,3 @@ class ModalBuilder extends discord_js_1.ModalBuilder {
     constructor() { super(); }
 }
 exports.ModalBuilder = ModalBuilder;
-n;

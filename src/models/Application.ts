@@ -1,36 +1,21 @@
-import { getPool } from '../database/pool';
+import { RPForms } from '../core/RPForms';
+import { IApplication, ApplicationStatus } from '../interfaces/IDatabaseModels';
 
 class ApplicationModel {
-  static async createApplication(discordId) {
-    const pool = getPool();
-    const [result]: any = await pool.query(
-      'INSERT INTO applications (discord_id, status) VALUES (?, ?)',
-      [discordId, 'pending'],
-    );
-    return result.insertId;
+  static async createApplication(discordId: string): Promise<number> {
+    return await RPForms.database.insertApplication({ discordId });
   }
 
-  static async getApplicationById(id) {
-    const pool = getPool();
-    const [rows] = await pool.query('SELECT * FROM applications WHERE id = ?', [id]);
-    return rows[0];
+  static async getApplicationById(id: number): Promise<IApplication | undefined> {
+    return await RPForms.database.getApplicationById(id);
   }
 
-  static async getActiveApplication(discordId) {
-    const pool = getPool();
-    const [rows] = await pool.query(
-      'SELECT * FROM applications WHERE discord_id = ? AND status IN ("pending", "review")',
-      [discordId],
-    );
-    return rows[0];
+  static async getActiveApplication(discordId: string): Promise<IApplication | undefined> {
+    return await RPForms.database.getActiveApplication(discordId);
   }
 
-  static async updateStatus(id, status, staffChannelId = null) {
-    const pool = getPool();
-    await pool.query(
-      'UPDATE applications SET status = ?, staff_channel_id = COALESCE(?, staff_channel_id) WHERE id = ?',
-      [status, staffChannelId, id],
-    );
+  static async updateStatus(id: number, status: ApplicationStatus | string, staffChannelId: string | null = null): Promise<void> {
+    await RPForms.database.updateApplicationStatus(id, status, staffChannelId);
   }
 }
 
