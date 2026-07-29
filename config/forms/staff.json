@@ -1,13 +1,13 @@
 {
   "metadata": {
-    "id": "allowlist",
-    "title": "Whitelist Application",
-    "description": "Apply for whitelist access to Daddy's Roleplay.",
+    "id": "staff",
+    "title": "Staff Application",
+    "description": "Apply to join the server staff team.",
     "version": "1.0.0"
   },
   "button": {
-    "label": "Apply for Whitelist",
-    "style": "Primary"
+    "label": "Apply for Staff",
+    "style": "Success"
   },
   "review": {
     "channelId": "1531281025760497824",
@@ -15,13 +15,12 @@
   },
   "actions": {
     "onApprove": {
-      "addRoles": ["1531280202020290762"],
-      "removeRoles": ["1504806859121361028"],
+      "addRoles": ["123456789012345678"],
       "sendDM": true,
       "logChannelId": "1531280859376914552"
     },
     "onReject": {
-      "cooldownHours": 24,
+      "cooldownHours": 168,
       "sendDM": true,
       "logChannelId": "1531280859376914552"
     }
@@ -30,22 +29,22 @@
     {
       "id": 1,
       "type": "text",
-      "label": "Character Name",
-      "question": "What is your Character Name?",
+      "label": "Timezone",
+      "question": "What is your timezone?",
       "required": true
     },
     {
       "id": 2,
-      "type": "text",
-      "label": "Character Age",
-      "question": "How old is your character?",
+      "type": "paragraph",
+      "label": "Experience",
+      "question": "Describe your previous moderation experience.",
       "required": true
     },
     {
       "id": 3,
       "type": "paragraph",
-      "label": "Backstory",
-      "question": "Tell us about your character's backstory.",
+      "label": "Why you",
+      "question": "Why do you want to be staff?",
       "required": true
     }
   ],

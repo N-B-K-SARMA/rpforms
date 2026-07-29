@@ -8,7 +8,11 @@ export function registerApplicationEvents(client: any) {
         const app = await ApplicationModel.getApplicationById(appId);
         if (!app) return;
 
-        const guild = client.guilds.cache.first(); // Assuming a single guild for simplicity, or we fetch from DB
+        // In a real system, the DB would track which form was used. For now, we assume 'allowlist'
+        const form = RPForms.forms.getForm('allowlist');
+        if (!form) return;
+
+        const guild = client.guilds.cache.first(); 
         if (!guild) return;
 
         let member;
@@ -19,14 +23,18 @@ export function registerApplicationEvents(client: any) {
         }
 
         if (member) {
-            if (RPForms.config.getAll().roles.allowlisted) {
-                const role = guild.roles.cache.get(RPForms.config.getAll().roles.allowlisted);
-                if (role) await member.roles.add(role).catch(() => {});
+            if (form.actions.onApprove.addRoles) {
+                for (const roleId of form.actions.onApprove.addRoles) {
+                    const role = guild.roles.cache.get(roleId);
+                    if (role) await member.roles.add(role).catch(() => {});
+                }
             }
-            if (RPForms.config.getAll().roles.nonWhitelisted) {
-                const role = guild.roles.cache.get(RPForms.config.getAll().roles.nonWhitelisted);
-                if (role && member.roles.cache.has(role.id)) {
-                    await member.roles.remove(role).catch(() => {});
+            if (form.actions.onApprove.removeRoles) {
+                for (const roleId of form.actions.onApprove.removeRoles) {
+                    const role = guild.roles.cache.get(roleId);
+                    if (role && member.roles.cache.has(role.id)) {
+                        await member.roles.remove(role).catch(() => {});
+                    }
                 }
             }
         }
@@ -39,16 +47,14 @@ export function registerApplicationEvents(client: any) {
                 { name: 'Moderator', value: `<@${request.staffId}>`, inline: true },
                 { name: 'Acceptance ID', value: `${appId}`, inline: true },
             )
-            .setColor(RPForms.config.getAll().embeds.colors.success as any);
+            .setColor(form.embeds?.reviewEmbed?.color || '#00FF00' as any);
 
-        if (RPForms.config.getAll().embeds.banner) acceptedEmbed.setImage(RPForms.config.getAll().embeds.banner);
-
-        if (member) {
+        if (form.actions.onApprove.sendDM && member) {
             try { await member.send({ embeds: [acceptedEmbed] }); } catch (e) {}
         }
 
-        if (RPForms.config.getAll().channels.acceptedLogChannel) {
-            const channel = guild.channels.cache.get(RPForms.config.getAll().channels.acceptedLogChannel);
+        if (form.actions.onApprove.logChannelId) {
+            const channel = guild.channels.cache.get(form.actions.onApprove.logChannelId);
             if (channel) await channel.send({ embeds: [acceptedEmbed] }).catch(() => {});
         }
     });
@@ -57,6 +63,9 @@ export function registerApplicationEvents(client: any) {
         const { appId, reason, staffId } = request;
         const app = await ApplicationModel.getApplicationById(appId);
         if (!app) return;
+
+        const form = RPForms.forms.getForm('allowlist');
+        if (!form) return;
 
         const guild = client.guilds.cache.first();
         if (!guild) return;
@@ -72,16 +81,14 @@ export function registerApplicationEvents(client: any) {
                 { name: 'Moderator', value: `<@${staffId}>`, inline: true },
                 { name: 'Rejection ID', value: `${appId}`, inline: true },
             )
-            .setColor(RPForms.config.getAll().embeds.colors.danger as any);
+            .setColor(form.embeds?.reviewEmbed?.color || '#FF0000' as any);
 
-        if (RPForms.config.getAll().embeds.banner) rejectedEmbed.setImage(RPForms.config.getAll().embeds.banner);
-
-        if (member) {
+        if (form.actions.onReject.sendDM && member) {
             try { await member.send({ embeds: [rejectedEmbed] }); } catch (e) {}
         }
 
-        if (RPForms.config.getAll().channels.rejectedLogChannel) {
-            const channel = guild.channels.cache.get(RPForms.config.getAll().channels.rejectedLogChannel);
+        if (form.actions.onReject.logChannelId) {
+            const channel = guild.channels.cache.get(form.actions.onReject.logChannelId);
             if (channel) await channel.send({ embeds: [rejectedEmbed] }).catch(() => {});
         }
     });
@@ -101,21 +108,19 @@ export function registerApplicationEvents(client: any) {
             const embed = new EmbedBuilder()
                 .setTitle('Application Requires Changes')
                 .setDescription(`Your application requires changes.\n\n**Reason:**\n${reason}\n\nPlease use the button below or start again to continue.`)
-                .setColor(RPForms.config.getAll().embeds.colors.warning as any);
+                .setColor('#FFFF00');
 
-            // We omit the button here for simplicity, or we can add it back if we have the UI builder for it.
-            // But since the discord.js interaction is not present here, we just send a DM.
             try { await member.send({ embeds: [embed] }); } catch (e) {}
         }
 
-        const channelId = RPForms.config.getAll().channels.reviewLogChannel;
+        const channelId = RPForms.config.getAll().channels?.reviewLogChannel;
         if (channelId) {
             const channel = guild.channels.cache.get(channelId);
             if (channel) {
                 const embed = new EmbedBuilder()
                     .setTitle(`Application #${appId} Review Requested`)
                     .setDescription(`Applicant: <@${app.discord_id}>\nRequested by: <@${staffId}>\nReason: ${reason}`)
-                    .setColor(RPForms.config.getAll().embeds.colors.warning as any)
+                    .setColor('#FFFF00')
                     .setTimestamp();
                 await channel.send({ embeds: [embed] }).catch(() => {});
             }

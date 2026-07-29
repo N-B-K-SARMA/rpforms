@@ -14,8 +14,8 @@ exports.default = {
             return interaction.reply({ content: 'Error: Form "allowlist" not found in config/forms', ephemeral: true });
         }
         const embed = new discord_js_1.EmbedBuilder()
-            .setTitle(form.title)
-            .setDescription(form.description)
+            .setTitle(form.metadata.title)
+            .setDescription(form.metadata.description)
             .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.primary)
             .setImage(RPForms_1.RPForms.config.getAll().embeds.banner)
             .setThumbnail(RPForms_1.RPForms.config.getAll().embeds.logo)

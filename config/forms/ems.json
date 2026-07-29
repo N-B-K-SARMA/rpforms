@@ -1,13 +1,13 @@
 {
   "metadata": {
-    "id": "allowlist",
-    "title": "Whitelist Application",
-    "description": "Apply for whitelist access to Daddy's Roleplay.",
+    "id": "ems",
+    "title": "EMS Application",
+    "description": "Apply to join the Los Santos Emergency Medical Services.",
     "version": "1.0.0"
   },
   "button": {
-    "label": "Apply for Whitelist",
-    "style": "Primary"
+    "label": "Apply for EMS",
+    "style": "Danger"
   },
   "review": {
     "channelId": "1531281025760497824",
@@ -15,13 +15,12 @@
   },
   "actions": {
     "onApprove": {
-      "addRoles": ["1531280202020290762"],
-      "removeRoles": ["1504806859121361028"],
+      "addRoles": ["123456789012345680"],
       "sendDM": true,
       "logChannelId": "1531280859376914552"
     },
     "onReject": {
-      "cooldownHours": 24,
+      "cooldownHours": 48,
       "sendDM": true,
       "logChannelId": "1531280859376914552"
     }
@@ -36,16 +35,9 @@
     },
     {
       "id": 2,
-      "type": "text",
-      "label": "Character Age",
-      "question": "How old is your character?",
-      "required": true
-    },
-    {
-      "id": 3,
       "type": "paragraph",
-      "label": "Backstory",
-      "question": "Tell us about your character's backstory.",
+      "label": "Medical Experience",
+      "question": "Do you have any prior RP medical experience?",
       "required": true
     }
   ],

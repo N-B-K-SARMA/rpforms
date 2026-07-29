@@ -23,8 +23,8 @@ export default {
     }
 
     const embed = new EmbedBuilder()
-      .setTitle(form.title)
-      .setDescription(form.description)
+      .setTitle(form.metadata.title)
+      .setDescription(form.metadata.description)
       .setColor(RPForms.config.getAll().embeds.colors.primary as any)
       .setImage(RPForms.config.getAll().embeds.banner)
       .setThumbnail(RPForms.config.getAll().embeds.logo)
