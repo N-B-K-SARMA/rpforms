@@ -11,8 +11,9 @@ export class FormManager {
     }
 
     public loadForms(): void {
-        this.forms.clear();
-        this.validationErrors.clear();
+        const tempForms: Map<string, IForm> = new Map();
+        const tempValidationErrors: Map<string, string[]> = new Map();
+        
         const formsDir = path.join(__dirname, '..', '..', 'config', 'forms');
         if (fs.existsSync(formsDir)) {
             const files = fs.readdirSync(formsDir).filter(f => f.endsWith('.json'));
@@ -21,21 +22,31 @@ export class FormManager {
                     const data = JSON.parse(fs.readFileSync(path.join(formsDir, file), 'utf8'));
                     const errors = this.validate(data);
                     if (errors.length === 0) {
-                        this.forms.set(data.metadata.id, data as IForm);
-                        console.log(`[FormManager] Loaded valid form: ${data.metadata.id}`);
+                        if (tempForms.has(data.metadata.id)) {
+                            tempValidationErrors.set(file, [`Duplicate form ID: ${data.metadata.id}`]);
+                        } else {
+                            tempForms.set(data.metadata.id, data as IForm);
+                            console.log(`[FormManager] Loaded valid form: ${data.metadata.id}`);
+                        }
                     } else {
-                        this.validationErrors.set(file, errors);
+                        tempValidationErrors.set(file, errors);
                         console.error(`[FormManager] Invalid form schema in ${file}:`);
                         errors.forEach(e => console.error(`  - ${e}`));
                     }
                 } catch (e: any) {
-                    this.validationErrors.set(file, [`JSON Parse Error: ${e.message}`]);
+                    tempValidationErrors.set(file, [`JSON Parse Error: ${e.message}`]);
                     console.error(`[FormManager] Failed to load form ${file}:`, e.message);
                 }
             }
         } else {
             console.warn(`[FormManager] Forms directory not found: ${formsDir}`);
         }
+
+        // Atomic swap
+        if (tempValidationErrors.size === 0 || tempForms.size > 0) {
+            this.forms = tempForms;
+        }
+        this.validationErrors = tempValidationErrors;
     }
 
     public validate(data: any): string[] {

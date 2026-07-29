@@ -5,6 +5,14 @@ export default {
   type: 'modal_prefix',
 
   async execute(interaction: any, client: any) {
+    const form = RPForms.forms.getForm('allowlist');
+    if (form?.review?.reviewerRoles) {
+        const hasRole = form.review.reviewerRoles.some((roleId: string) => interaction.member.roles.cache.has(roleId));
+        if (!hasRole) {
+            return interaction.reply({ content: 'You do not have permission to review applications.', ephemeral: true });
+        }
+    }
+
     const parts = interaction.customId.split('_');
     const action = parts[1]; // reject, review
     const appId = parseInt(parts[2]);

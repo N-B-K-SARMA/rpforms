@@ -31,15 +31,26 @@ function registerApplicationEvents(client) {
             if (form.actions.onApprove.addRoles) {
                 for (const roleId of form.actions.onApprove.addRoles) {
                     const role = guild.roles.cache.get(roleId);
-                    if (role)
-                        await member.roles.add(role).catch(() => { });
+                    if (role) {
+                        try {
+                            await member.roles.add(role);
+                        }
+                        catch (e) {
+                            console.warn(`[ApplicationEvents] Failed to add role ${roleId}`);
+                        }
+                    }
                 }
             }
             if (form.actions.onApprove.removeRoles) {
                 for (const roleId of form.actions.onApprove.removeRoles) {
                     const role = guild.roles.cache.get(roleId);
                     if (role && member.roles.cache.has(role.id)) {
-                        await member.roles.remove(role).catch(() => { });
+                        try {
+                            await member.roles.remove(role);
+                        }
+                        catch (e) {
+                            console.warn(`[ApplicationEvents] Failed to remove role ${roleId}`);
+                        }
                     }
                 }
             }
@@ -84,12 +95,14 @@ function registerApplicationEvents(client) {
             try {
                 await member.send({ embeds: [rejectedEmbed] });
             }
-            catch (e) { }
+            catch (e) {
+                console.warn(`[ApplicationEvents] Failed to send rejection DM to ${app.discord_id}`);
+            }
         }
         if (form.actions.onReject.logChannelId) {
             const channel = guild.channels.cache.get(form.actions.onReject.logChannelId);
             if (channel)
-                await channel.send({ embeds: [rejectedEmbed] }).catch(() => { });
+                await channel.send({ embeds: [rejectedEmbed] }).catch((e) => { console.warn(`[ApplicationEvents] Failed to send log to ${form.actions.onReject.logChannelId}`, e.message); });
         }
     });
     RPForms_1.RPForms.events.on('applicationReviewRequest', async (request) => {
@@ -104,7 +117,9 @@ function registerApplicationEvents(client) {
         try {
             member = await guild.members.fetch(app.discord_id);
         }
-        catch (e) { }
+        catch (e) {
+            console.warn(`[ApplicationEvents] Member left server: ${app.discord_id}`);
+        }
         if (member) {
             const embed = new discord_js_1.EmbedBuilder()
                 .setTitle('Application Requires Changes')
@@ -113,7 +128,9 @@ function registerApplicationEvents(client) {
             try {
                 await member.send({ embeds: [embed] });
             }
-            catch (e) { }
+            catch (e) {
+                console.warn(`[ApplicationEvents] Failed to send review DM to ${app.discord_id}`);
+            }
         }
         const channelId = RPForms_1.RPForms.config.getAll().channels?.reviewLogChannel;
         if (channelId) {
@@ -124,7 +141,7 @@ function registerApplicationEvents(client) {
                     .setDescription(`Applicant: <@${app.discord_id}>\nRequested by: <@${staffId}>\nReason: ${reason}`)
                     .setColor('#FFFF00')
                     .setTimestamp();
-                await channel.send({ embeds: [embed] }).catch(() => { });
+                await channel.send({ embeds: [embed] }).catch((e) => { console.warn(`[ApplicationEvents] Failed to send log to ${channelId}`, e.message); });
             }
         }
     });

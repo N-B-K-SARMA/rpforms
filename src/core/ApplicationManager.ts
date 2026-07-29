@@ -55,7 +55,10 @@ export class ApplicationManager {
         }
 
         if (!isResume) {
+            console.log(`[ApplicationManager] User ${userId} started a new application (ID: ${app.id}, Form: ${formId})`);
             RPForms.events.emit('applicationCreate', { userId, formId, appId: app.id });
+        } else {
+            console.log(`[ApplicationManager] User ${userId} resumed application (ID: ${app.id}, Form: ${formId})`);
         }
 
         return {
