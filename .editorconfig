@@ -1,0 +1,1 @@
+root = true\r\n\r\n[*]\r\nindent_style = space\r\nindent_size = 2\r\nend_of_line = lf\r\ncharset = utf-8\r\ntrim_trailing_whitespace = true\r\ninsert_final_newline = true

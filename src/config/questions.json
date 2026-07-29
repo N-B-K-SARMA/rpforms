@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "question": "What is your Character Name?",
+    "required": true
+  },
+  {
+    "id": 2,
+    "question": "How old is your character?",
+    "required": true
+  },
+  {
+    "id": 3,
+    "question": "Tell us about your character's backstory.",
+    "required": true
+  }
+]
