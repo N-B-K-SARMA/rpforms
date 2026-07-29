@@ -1,0 +1,1 @@
+const fs = require("fs"); let c = fs.readFileSync("./index.ts", "utf8"); if (!c.includes("RPForms")) { c = "import { RPForms } from \"./src/core/RPForms\";\\n" + c; c = c.replace(/client\.login/g, "RPForms.init();\\nclient.login"); fs.writeFileSync("./index.ts", c); }

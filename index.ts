@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+import { RPForms } from "./src/core/RPForms";\nimport dotenv from 'dotenv';
 dotenv.config();
 import { Client, GatewayIntentBits, Collection } from 'discord.js';
 import { initDatabase } from './src/database/init';
@@ -30,7 +30,7 @@ async function startBot() {
         }
         
         // 3. Login
-        await client.login(process.env.DISCORD_TOKEN);
+        await RPForms.init();\nclient.login(process.env.DISCORD_TOKEN);
     } catch (error) {
         console.error('Failed to start the bot:', error);
         process.exit(1);

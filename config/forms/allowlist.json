@@ -1,0 +1,39 @@
+{
+  "id": "allowlist",
+  "title": "Whitelist Application",
+  "description": "Apply for whitelist access to Daddy's Roleplay.",
+  "button": {
+    "label": "Apply for Whitelist",
+    "style": "Primary"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "question": "What is your Character Name?",
+      "required": true
+    },
+    {
+      "id": 2,
+      "question": "How old is your character?",
+      "required": true
+    },
+    {
+      "id": 3,
+      "question": "Tell us about your character's backstory.",
+      "required": true
+    }
+  ],
+  "review": {
+    "channelId": "1531281025760497824",
+    "reviewerRoles": ["1531279940677271573"]
+  },
+  "roles": {
+    "onApprove": ["1531280202020290762"],
+    "onRejectRemove": ["1504806859121361028"]
+  },
+  "logging": {
+    "approvedChannelId": "1531280859376914552",
+    "rejectedChannelId": "1531280859376914552"
+  },
+  "cooldown": 86400000
+}
