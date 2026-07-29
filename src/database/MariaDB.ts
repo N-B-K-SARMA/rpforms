@@ -60,4 +60,17 @@ export class MariaDB implements IDatabase {
         const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM applications WHERE discord_id = ? ORDER BY created_at DESC', [discordId]);
         return rows as IApplication[];
     }
+    async getGlobalStats(): Promise<{ total: number, pending: number, approved: number, rejected: number, closed: number }> {
+        const pool = getPool();
+        const [rows] = await pool.query<RowDataPacket[]>('SELECT status, COUNT(*) as count FROM applications GROUP BY status');
+        const stats = { total: 0, pending: 0, approved: 0, rejected: 0, closed: 0 };
+        for (const row of rows) {
+            stats.total += row.count;
+            if (row.status === 'pending' || row.status === 'review') stats.pending += row.count;
+            else if (row.status === 'approved') stats.approved += row.count;
+            else if (row.status === 'rejected') stats.rejected += row.count;
+            else if (row.status === 'closed' || row.status === 'cancelled') stats.closed += row.count;
+        }
+        return stats;
+    }
 }

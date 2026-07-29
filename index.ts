@@ -30,9 +30,23 @@ async function startBot() {
         }
         
         // 3. Login
-        await RPForms.init();\nclient.login(process.env.DISCORD_TOKEN);
+        await RPForms.init();
+        await client.login(process.env.DISCORD_TOKEN);
+        
+        console.log('\n================================');
+        console.log('   RPForms v1.0.0 Initialized   ');
+        console.log('================================');
+        console.log(`[Database] Connected to MariaDB`);
+        console.log(`[Forms] Loaded ${RPForms.forms.getForms().length} templates`);
+        
+        const errors = RPForms.forms.getValidationErrors();
+        if (errors.size > 0) {
+            console.log(`[Forms] ⚠️ Warning: ${errors.size} forms failed validation.`);
+        }
+        
+        console.log('================================\n');
     } catch (error) {
-        console.error('Failed to start the bot:', error);
+        console.error('\n[Fatal] Failed to start the bot:', error);
         process.exit(1);
     }
 }

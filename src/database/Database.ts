@@ -14,4 +14,5 @@ export interface IDatabase {
     getUser(discordId: string): Promise<IUser | undefined>;
     setUserCooldown(discordId: string, cooldownUntil: Date | null): Promise<void>;
     getApplicationHistory(discordId: string): Promise<IApplication[]>;
+    getGlobalStats(): Promise<{ total: number, pending: number, approved: number, rejected: number, closed: number }>;
 }

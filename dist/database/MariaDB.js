@@ -60,5 +60,22 @@ class MariaDB {
         const [rows] = await pool.query('SELECT * FROM applications WHERE discord_id = ? ORDER BY created_at DESC', [discordId]);
         return rows;
     }
+    async getGlobalStats() {
+        const pool = (0, pool_1.getPool)();
+        const [rows] = await pool.query('SELECT status, COUNT(*) as count FROM applications GROUP BY status');
+        const stats = { total: 0, pending: 0, approved: 0, rejected: 0, closed: 0 };
+        for (const row of rows) {
+            stats.total += row.count;
+            if (row.status === 'pending' || row.status === 'review')
+                stats.pending += row.count;
+            else if (row.status === 'approved')
+                stats.approved += row.count;
+            else if (row.status === 'rejected')
+                stats.rejected += row.count;
+            else if (row.status === 'closed' || row.status === 'cancelled')
+                stats.closed += row.count;
+        }
+        return stats;
+    }
 }
 exports.MariaDB = MariaDB;

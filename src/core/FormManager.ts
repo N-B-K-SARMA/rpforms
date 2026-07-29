@@ -52,7 +52,11 @@ export class FormManager {
             if (typeof data.metadata.id !== 'string') errors.push('metadata.id must be a string.');
             if (typeof data.metadata.title !== 'string') errors.push('metadata.title must be a string.');
             if (typeof data.metadata.description !== 'string') errors.push('metadata.description must be a string.');
-            if (typeof data.metadata.version !== 'string') errors.push('metadata.version must be a string.');
+            if (typeof data.metadata.version !== 'string') {
+                errors.push('metadata.version must be a string.');
+            } else if (!data.metadata.version.startsWith('1.')) {
+                errors.push(`[Warning] Outdated schema version: ${data.metadata.version}. Expected 1.x.x`);
+            }
         }
 
         // Button
