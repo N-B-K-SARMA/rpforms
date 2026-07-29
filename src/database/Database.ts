@@ -13,4 +13,5 @@ export interface IDatabase {
     ensureUser(discordId: string): Promise<void>;
     getUser(discordId: string): Promise<IUser | undefined>;
     setUserCooldown(discordId: string, cooldownUntil: Date | null): Promise<void>;
+    getApplicationHistory(discordId: string): Promise<IApplication[]>;
 }

@@ -1,5 +1,6 @@
 import { RPForms } from '../core/RPForms';
 import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from 'discord.js';
+import { ReviewUIBuilder } from '../builders/ReviewUIBuilder';
 import fs from 'fs';
 import path from 'path';
 
@@ -11,7 +12,15 @@ export default {
     .addSubcommand((subcommand) =>
       subcommand
         .setName('user')
-        .setDescription('View an application by user')
+        .setDescription('View the latest application by user')
+        .addUserOption((option) =>
+          option.setName('target').setDescription('The user').setRequired(true),
+        ),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('history')
+        .setDescription('View all past applications by a user')
         .addUserOption((option) =>
           option.setName('target').setDescription('The user').setRequired(true),
         ),
@@ -32,7 +41,7 @@ export default {
     ),
 
   async execute(interaction, client) {
-        const subcommand = interaction.options.getSubcommand();
+    const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === 'user') {
       const target = interaction.options.getUser('target');
@@ -49,7 +58,7 @@ export default {
 
       const app = rows[0];
       const embed = new EmbedBuilder()
-        .setTitle(`Application Data for ${target.username}`)
+        .setTitle(`Latest Application Data for ${target.username}`)
         .addFields(
           { name: 'App ID', value: `${app.id}`, inline: true },
           { name: 'Status', value: app.status, inline: true },
@@ -62,6 +71,21 @@ export default {
         .setColor(RPForms.config.getAll().embeds.colors.primary as any);
 
       await interaction.reply({ embeds: [embed], ephemeral: true });
+    } else if (subcommand === 'history') {
+      const target = interaction.options.getUser('target');
+      const [rows]: any = await RPForms.database.query(
+        'SELECT * FROM applications WHERE discord_id = ? ORDER BY created_at DESC',
+        [target.id],
+      );
+
+      if (rows.length === 0)
+        return interaction.reply({
+          content: 'No applications found for this user.',
+          ephemeral: true,
+        });
+
+      const ui = ReviewUIBuilder.buildHistoryEmbed(target.username, target.id, rows);
+      await interaction.reply(ui);
     } else if (subcommand === 'list') {
       const [rows]: any = await RPForms.database.query(
         'SELECT * FROM applications WHERE status = "pending" ORDER BY created_at ASC LIMIT 10',

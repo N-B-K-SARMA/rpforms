@@ -14,5 +14,8 @@ class ApplicationModel {
     static async updateStatus(id, status, staffChannelId = null) {
         await RPForms_1.RPForms.database.updateApplicationStatus(id, status, staffChannelId);
     }
+    static async getApplicationHistory(discordId) {
+        return await RPForms_1.RPForms.database.getApplicationHistory(discordId);
+    }
 }
 exports.default = ApplicationModel;

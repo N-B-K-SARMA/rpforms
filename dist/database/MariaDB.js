@@ -55,5 +55,10 @@ class MariaDB {
         const pool = (0, pool_1.getPool)();
         await pool.query('UPDATE users SET cooldown_until = ? WHERE discord_id = ?', [cooldownUntil, discordId]);
     }
+    async getApplicationHistory(discordId) {
+        const pool = (0, pool_1.getPool)();
+        const [rows] = await pool.query('SELECT * FROM applications WHERE discord_id = ? ORDER BY created_at DESC', [discordId]);
+        return rows;
+    }
 }
 exports.MariaDB = MariaDB;

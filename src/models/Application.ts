@@ -17,6 +17,10 @@ class ApplicationModel {
   static async updateStatus(id: number, status: ApplicationStatus | string, staffChannelId: string | null = null): Promise<void> {
     await RPForms.database.updateApplicationStatus(id, status, staffChannelId);
   }
+
+  static async getApplicationHistory(discordId: string): Promise<IApplication[]> {
+    return await RPForms.database.getApplicationHistory(discordId);
+  }
 }
 
 export default ApplicationModel;

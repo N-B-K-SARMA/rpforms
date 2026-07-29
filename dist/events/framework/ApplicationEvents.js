@@ -128,4 +128,27 @@ function registerApplicationEvents(client) {
             }
         }
     });
+    RPForms_1.RPForms.events.on('applicationClose', async (request) => {
+        const { appId, staffId } = request;
+        const app = await Application_1.default.getApplicationById(appId);
+        if (!app)
+            return;
+        const form = RPForms_1.RPForms.forms.getForm('allowlist');
+        if (!form)
+            return;
+        const guild = client.guilds.cache.first();
+        if (!guild)
+            return;
+        if (form.actions.onReject.logChannelId && staffId) {
+            const channel = guild.channels.cache.get(form.actions.onReject.logChannelId);
+            if (channel) {
+                const embed = new discord_js_1.EmbedBuilder()
+                    .setTitle(`Application #${appId} Closed`)
+                    .setDescription(`Applicant: <@${app.discord_id}>\nClosed by: <@${staffId}>`)
+                    .setColor('#808080')
+                    .setTimestamp();
+                await channel.send({ embeds: [embed] }).catch(() => { });
+            }
+        }
+    });
 }

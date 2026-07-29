@@ -21,4 +21,5 @@ export interface StaffActionRequest {
     action: string;
     staffId: string;
     reason?: string;
+    applicantId?: string;
 }

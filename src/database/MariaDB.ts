@@ -55,4 +55,9 @@ export class MariaDB implements IDatabase {
         const pool = getPool();
         await pool.query<ResultSetHeader>('UPDATE users SET cooldown_until = ? WHERE discord_id = ?', [cooldownUntil, discordId]);
     }
+    async getApplicationHistory(discordId: string): Promise<IApplication[]> {
+        const pool = getPool();
+        const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM applications WHERE discord_id = ? ORDER BY created_at DESC', [discordId]);
+        return rows as IApplication[];
+    }
 }

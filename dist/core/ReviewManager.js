@@ -10,9 +10,10 @@ const User_1 = __importDefault(require("../models/User"));
 const Answer_1 = __importDefault(require("../models/Answer"));
 const ReviewUIBuilder_1 = require("../builders/ReviewUIBuilder");
 const ModalUIBuilder_1 = require("../builders/ModalUIBuilder");
+const discord_js_1 = require("discord.js");
 class ReviewManager {
     async processAction(request) {
-        const { appId, action } = request;
+        const { appId, action, applicantId } = request;
         if (action === 'approve') {
             await Application_1.default.updateStatus(appId, 'approved');
             RPForms_1.RPForms.events.emit('applicationApprove', request);
@@ -24,6 +25,21 @@ class ReviewManager {
         else if (action === 'review') {
             return { modal: ModalUIBuilder_1.ModalUIBuilder.buildReasonModal(appId, 'review') };
         }
+        else if (action === 'close') {
+            await Application_1.default.updateStatus(appId, 'closed');
+            RPForms_1.RPForms.events.emit('applicationClose', request);
+            const closeEmbed = new discord_js_1.EmbedBuilder()
+                .setTitle(`Application #${appId} Closed`)
+                .setDescription('This application has been closed by staff without approval or rejection.')
+                .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.secondary);
+            return { success: true, ui: { embeds: [closeEmbed], components: [] } };
+        }
+        else if (action === 'history') {
+            if (!applicantId)
+                return { error: 'Applicant ID not provided' };
+            const history = await Application_1.default.getApplicationHistory(applicantId);
+            return { success: true, ui: ReviewUIBuilder_1.ReviewUIBuilder.buildHistoryEmbed('Applicant', applicantId, history) };
+        }
         return { error: 'Invalid action' };
     }
     async handleModal(request) {
@@ -32,7 +48,10 @@ class ReviewManager {
             await Application_1.default.updateStatus(appId, 'rejected');
             const app = await Application_1.default.getApplicationById(appId);
             if (app) {
-                const cooldownMs = RPForms_1.RPForms.config.getAll().settings.cooldown || 86400000;
+                // Determine cooldown from form settings
+                const form = RPForms_1.RPForms.forms.getForm('allowlist');
+                const cooldownHours = form?.actions?.onReject?.cooldownHours || 24;
+                const cooldownMs = cooldownHours * 60 * 60 * 1000;
                 const cooldownUntil = new Date(Date.now() + cooldownMs);
                 await User_1.default.setCooldown(app.discord_id, cooldownUntil);
             }
@@ -51,11 +70,17 @@ class ReviewManager {
         const answers = await Answer_1.default.getAnswers(appId);
         const form = RPForms_1.RPForms.forms.getForm('allowlist');
         const questions = form ? form.questions : [];
-        const staffChannelId = RPForms_1.RPForms.config.getAll().channels.staffReviewChannel || RPForms_1.RPForms.config.getAll().channels.applicationCategory;
+        const staffChannelId = form?.review?.channelId || RPForms_1.RPForms.config.getAll().channels.staffReviewChannel || RPForms_1.RPForms.config.getAll().channels.applicationCategory;
         await Application_1.default.updateStatus(appId, 'review', staffChannelId);
         RPForms_1.RPForms.events.emit('applicationSubmit', { appId, applicantId });
+        const history = await Application_1.default.getApplicationHistory(applicantId);
+        const historyInfo = {
+            total: history.length,
+            approved: history.filter(h => h.status === 'approved').length,
+            rejected: history.filter(h => h.status === 'rejected').length
+        };
         return {
-            ui: ReviewUIBuilder_1.ReviewUIBuilder.buildStaffReviewEmbed(applicantStr, applicantId, appId, questions, answers),
+            ui: ReviewUIBuilder_1.ReviewUIBuilder.buildStaffReviewEmbed(applicantStr, applicantId, appId, questions, answers, historyInfo),
             staffChannelId
         };
     }
