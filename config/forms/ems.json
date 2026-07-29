@@ -11,11 +11,15 @@
   },
   "review": {
     "channelId": "1531281025760497824",
-    "reviewerRoles": ["1531279940677271573"]
+    "reviewerRoles": [
+      "1531279940677271573"
+    ]
   },
   "actions": {
     "onApprove": {
-      "addRoles": ["123456789012345680"],
+      "addRoles": [
+        "123456789012345680"
+      ],
       "sendDM": true,
       "logChannelId": "1531280859376914552"
     },
@@ -42,6 +46,8 @@
     }
   ],
   "runtime": {
-    "enabled": true
+    "enabled": true,
+    "resumeApplications": true,
+    "timeoutMinutes": 60
   }
 }

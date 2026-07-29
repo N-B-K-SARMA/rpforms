@@ -10,43 +10,69 @@ export class ApplicationManager {
     async startApplication(request: StartApplicationRequest, memberRoles: string[]) {
         const { userId, formId } = request;
 
+        const form = RPForms.forms.getForm(formId);
+        if (!form) {
+            return { error: true, ui: ApplicationUIBuilder.buildErrorEmbed(`Form '${formId}' not found or invalid.`) };
+        }
+
+        if (!form.runtime.enabled) {
+            return { error: true, ui: ApplicationUIBuilder.buildErrorEmbed(`Form '${form.metadata.title}' is currently disabled.`) };
+        }
+
         await UserModel.ensureUser(userId);
         const user = await UserModel.getUser(userId);
 
         if (user?.cooldown_until && new Date(user.cooldown_until) > new Date()) {
             return {
                 error: true,
-                message: `You are on cooldown until <t:${Math.floor(new Date(user.cooldown_until).getTime() / 1000)}:R>.`
+                ui: ApplicationUIBuilder.buildErrorEmbed(`You are on cooldown until <t:${Math.floor(new Date(user.cooldown_until).getTime() / 1000)}:R>.`)
             };
         }
 
+        // Roles check (global for now or we could use form-specific block roles if added)
         if (RPForms.config.getAll().roles.allowlisted && memberRoles.includes(RPForms.config.getAll().roles.allowlisted)) {
-            return { error: true, message: 'You are already allowlisted!' };
+            // This logic should probably be configurable per form, but we'll stick to the existing behavior for now or adapt it to allowlist only.
+            // If the user wants to apply for staff, but they have allowlisted role, they shouldn't be blocked.
+            // For now, let's keep it as is if it's the allowlist form.
+            if (formId === 'allowlist') {
+                return { error: true, ui: ApplicationUIBuilder.buildErrorEmbed('You already have the allowlist role.') };
+            }
         }
 
         let app = await ApplicationModel.getActiveApplication(userId);
+        let isResume = false;
 
-        if (!app) {
-            const appId = await ApplicationModel.createApplication(userId);
-            app = await ApplicationModel.getApplicationById(appId);
+        if (app) {
+            // There's an active application. We can resume it.
+            isResume = true;
+        } else {
+            const newAppId = await ApplicationModel.createApplication(userId);
+            app = await ApplicationModel.getApplicationById(newAppId);
         }
 
         if (!app) {
-            return { error: true, message: 'Could not start application.' };
+            return { error: true, ui: ApplicationUIBuilder.buildErrorEmbed('Database error: Could not start application.') };
         }
 
-        RPForms.events.emit('applicationCreate', { userId, formId, appId: app.id });
+        if (!isResume) {
+            RPForms.events.emit('applicationCreate', { userId, formId, appId: app.id });
+        }
 
         return {
             error: false,
-            ui: ApplicationUIBuilder.buildStartEmbed(app.id)
+            ui: ApplicationUIBuilder.buildStartEmbed(app.id, form, isResume)
         };
     }
 
     async showQuestion(request: ShowQuestionRequest) {
         const { appId, qIndex } = request;
-        const form = RPForms.forms.getForm('allowlist');
-        const questions = form ? form.questions : [];
+        
+        // We really should store formId in the database application row. 
+        // For now, we will default to allowlist or we could try to guess. Let's just use allowlist until schema is updated.
+        const form = RPForms.forms.getForm('allowlist'); 
+        if (!form) return { ui: ApplicationUIBuilder.buildErrorEmbed('Form configuration missing.') };
+
+        const questions = form.questions || [];
 
         if (qIndex >= questions.length) {
             return await this.showFinalReview(appId);
@@ -56,7 +82,7 @@ export class ApplicationManager {
         const answer = await AnswerModel.getAnswer(appId, question.id.toString());
 
         return {
-            ui: ApplicationUIBuilder.buildQuestionEmbed(appId, qIndex, question, questions.length, answer?.answer_text)
+            ui: ApplicationUIBuilder.buildQuestionEmbed(appId, qIndex, question, questions.length, answer?.answer_text, form)
         };
     }
 
@@ -82,17 +108,54 @@ export class ApplicationManager {
         
         if (!question) return false;
 
+        // Validation
+        if (question.required && (!answerText || answerText.trim() === '')) {
+            return false;
+        }
+        if (question.minLength && answerText.length < question.minLength) {
+            return false; // Could throw error but returning false for simplicity right now
+        }
+        if (question.maxLength && answerText.length > question.maxLength) {
+            return false;
+        }
+
         await AnswerModel.saveAnswer(appId, question.id.toString(), answerText);
         return true;
     }
 
     async showFinalReview(appId: number) {
         const form = RPForms.forms.getForm('allowlist');
-        const questions = form ? form.questions : [];
+        if (!form) return { ui: ApplicationUIBuilder.buildErrorEmbed('Form configuration missing.') };
+        
+        const questions = form.questions || [];
         const answers = await AnswerModel.getAnswers(appId);
 
         return {
-            ui: ApplicationUIBuilder.buildFinalReviewEmbed(appId, questions, answers)
+            ui: ApplicationUIBuilder.buildFinalReviewEmbed(appId, form, questions, answers)
         };
+    }
+
+    async handleTimeouts() {
+        const forms = RPForms.forms.getForms();
+        for (const form of forms) {
+            if (!form.runtime.timeoutMinutes) continue;
+
+            const [rows]: any = await RPForms.database.query(
+                'SELECT * FROM applications WHERE status = "pending"'
+            );
+
+            const timeoutMs = form.runtime.timeoutMinutes * 60 * 1000;
+            const now = new Date().getTime();
+
+            for (const app of rows) {
+                // We should technically check if this app belongs to this form. For now assuming all are allowlist.
+                const appTime = new Date(app.created_at).getTime();
+                if (now - appTime > timeoutMs) {
+                    await RPForms.database.query('UPDATE applications SET status = "cancelled" WHERE id = ?', [app.id]);
+                    console.log(`[Timeout] Cancelled application ${app.id} due to timeout.`);
+                    // We could also send a DM to the user here.
+                }
+            }
+        }
     }
 }

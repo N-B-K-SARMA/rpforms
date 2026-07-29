@@ -10,62 +10,110 @@ class ApplicationUIBuilder {
         const emptyProgress = length - progress;
         return '█'.repeat(progress) + '░'.repeat(emptyProgress);
     }
-    static buildStartEmbed(appId) {
+    static buildErrorEmbed(message) {
         const embed = new discord_js_1.EmbedBuilder()
-            .setTitle('Application Process Started')
-            .setDescription('You will be presented with several questions.\n\nPlease provide detailed answers.')
-            .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.primary);
+            .setTitle('Error')
+            .setDescription(`⚠️ ${message}`)
+            .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.danger);
+        return { embeds: [embed], components: [], ephemeral: true };
+    }
+    static buildStartEmbed(appId, form, isResume = false) {
+        const embed = new discord_js_1.EmbedBuilder()
+            .setTitle(form.embeds?.startEmbed?.title || 'Application Started')
+            .setDescription(isResume ? 'Welcome back! You have an unfinished application. Would you like to resume?' : form.metadata.description)
+            .setColor(form.embeds?.startEmbed?.color || RPForms_1.RPForms.config.getAll().embeds.colors.primary);
+        if (form.embeds?.startEmbed?.thumbnail) {
+            embed.setThumbnail(form.embeds.startEmbed.thumbnail);
+        }
         const row = new discord_js_1.ActionRowBuilder().addComponents(new discord_js_1.ButtonBuilder()
             .setCustomId(`app_continue_${appId}_0`)
-            .setLabel('Continue')
+            .setLabel(isResume ? 'Resume Application' : 'Start Application')
             .setStyle(discord_js_1.ButtonStyle.Success), new discord_js_1.ButtonBuilder()
-            .setCustomId(`app_cancel_${appId}`)
-            .setLabel('Cancel Application')
+            .setCustomId(`app_cancelConfirm_${appId}`)
+            .setLabel('Cancel')
             .setStyle(discord_js_1.ButtonStyle.Danger));
         return { embeds: [embed], components: [row] };
     }
-    static buildQuestionEmbed(appId, qIndex, question, totalQuestions, answerText) {
+    static buildCancelConfirmEmbed(appId, form) {
         const embed = new discord_js_1.EmbedBuilder()
-            .setTitle(`Question ${qIndex + 1} / ${totalQuestions}`)
-            .setDescription(`**${question.question}**\n\n${this.getProgressBar(qIndex + 1, totalQuestions)}\n\nYour Answer:\n${answerText ? answerText : '*(No answer provided yet)*'}`)
-            .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.primary);
+            .setTitle('Cancel Application')
+            .setDescription('Are you sure you want to cancel this application? All progress will be lost.')
+            .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.warning);
+        const row = new discord_js_1.ActionRowBuilder().addComponents(new discord_js_1.ButtonBuilder()
+            .setCustomId(`app_cancel_${appId}`)
+            .setLabel('Yes, Cancel')
+            .setStyle(discord_js_1.ButtonStyle.Danger), new discord_js_1.ButtonBuilder()
+            .setCustomId(`app_continue_${appId}_0`)
+            .setLabel('No, Resume')
+            .setStyle(discord_js_1.ButtonStyle.Secondary));
+        return { embeds: [embed], components: [row] };
+    }
+    static buildQuestionEmbed(appId, qIndex, question, totalQuestions, answerText, form) {
+        const requirementText = question.required ? '*(Required)*' : '*(Optional)*';
+        const lengthText = question.minLength || question.maxLength
+            ? `\n\n*Length limits: ${question.minLength || 0} to ${question.maxLength || '∞'} chars*`
+            : '';
+        const embed = new discord_js_1.EmbedBuilder()
+            .setTitle(form?.embeds?.questionEmbed?.title || `Question ${qIndex + 1} of ${totalQuestions}`)
+            .setDescription(`${this.getProgressBar(qIndex + 1, totalQuestions)} (${Math.round(((qIndex + 1) / totalQuestions) * 100)}%)\n\n` +
+            `**${question.label}** ${requirementText}\n` +
+            `${question.question}${lengthText}\n\n` +
+            `**Your Answer:**\n\`\`\`text\n${answerText ? answerText : 'No answer provided yet.'}\n\`\`\``)
+            .setColor(form?.embeds?.questionEmbed?.color || RPForms_1.RPForms.config.getAll().embeds.colors.primary);
+        if (form?.embeds?.questionEmbed?.thumbnail) {
+            embed.setThumbnail(form.embeds.questionEmbed.thumbnail);
+        }
         const row = new discord_js_1.ActionRowBuilder().addComponents(new discord_js_1.ButtonBuilder()
             .setCustomId(`app_prev_${appId}_${qIndex}`)
             .setLabel('⬅ Previous')
             .setStyle(discord_js_1.ButtonStyle.Secondary)
             .setDisabled(qIndex === 0), new discord_js_1.ButtonBuilder()
             .setCustomId(`app_answer_${appId}_${qIndex}`)
-            .setLabel(answerText ? '✏️ Edit Answer' : '📝 Submit Answer')
+            .setLabel(answerText ? '✏️ Edit Answer' : '📝 Provide Answer')
             .setStyle(discord_js_1.ButtonStyle.Primary), new discord_js_1.ButtonBuilder()
             .setCustomId(`app_next_${appId}_${qIndex}`)
-            .setLabel('➡ Next')
-            .setStyle(discord_js_1.ButtonStyle.Secondary)
-            .setDisabled(!answerText), new discord_js_1.ButtonBuilder()
-            .setCustomId(`app_cancel_${appId}`)
+            .setLabel(qIndex === totalQuestions - 1 ? 'Review ➡' : 'Next ➡')
+            .setStyle(discord_js_1.ButtonStyle.Success)
+            .setDisabled(question.required && !answerText), new discord_js_1.ButtonBuilder()
+            .setCustomId(`app_cancelConfirm_${appId}`)
             .setLabel('❌ Cancel')
             .setStyle(discord_js_1.ButtonStyle.Danger));
         return { embeds: [embed], components: [row] };
     }
-    static buildFinalReviewEmbed(appId, questions, answers) {
+    static buildFinalReviewEmbed(appId, form, questions, answers) {
         const embed = new discord_js_1.EmbedBuilder()
-            .setTitle('Final Review')
-            .setDescription('Please review your answers before submitting.')
-            .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.primary);
-        for (const q of questions) {
+            .setTitle(form.embeds?.reviewEmbed?.title || 'Final Review')
+            .setDescription('Please review your answers before submitting. Click "Edit" to modify an answer.')
+            .setColor(form.embeds?.reviewEmbed?.color || RPForms_1.RPForms.config.getAll().embeds.colors.primary);
+        if (form.embeds?.reviewEmbed?.thumbnail) {
+            embed.setThumbnail(form.embeds.reviewEmbed.thumbnail);
+        }
+        for (let i = 0; i < questions.length; i++) {
+            const q = questions[i];
             const a = answers.find((ans) => String(ans.question_id) === String(q.id));
-            let displayAnswer = a ? a.answer_text : 'No answer';
+            let displayAnswer = a ? a.answer_text : '*(No answer)*';
             if (displayAnswer.length > 1024)
                 displayAnswer = displayAnswer.substring(0, 1020) + '...';
-            embed.addFields({ name: q.question, value: displayAnswer });
+            embed.addFields({ name: `Q${i + 1}: ${q.label}`, value: displayAnswer });
         }
         const row = new discord_js_1.ActionRowBuilder().addComponents(new discord_js_1.ButtonBuilder()
-            .setCustomId(`app_edit_${appId}`)
+            .setCustomId(`app_continue_${appId}_0`) // Goes back to first question to edit
             .setLabel('Edit Answers')
             .setStyle(discord_js_1.ButtonStyle.Secondary), new discord_js_1.ButtonBuilder()
             .setCustomId(`app_submit_${appId}`)
             .setLabel('Submit Application')
-            .setStyle(discord_js_1.ButtonStyle.Success));
+            .setStyle(discord_js_1.ButtonStyle.Success), new discord_js_1.ButtonBuilder()
+            .setCustomId(`app_cancelConfirm_${appId}`)
+            .setLabel('Cancel')
+            .setStyle(discord_js_1.ButtonStyle.Danger));
         return { embeds: [embed], components: [row] };
+    }
+    static buildSubmissionConfirmationEmbed(appId, form) {
+        const embed = new discord_js_1.EmbedBuilder()
+            .setTitle('Application Submitted! ✅')
+            .setDescription(`Your application has been successfully submitted to the staff team for review.\n\n**Reference ID:** \`#${appId}\`\n\nYou will be notified here once a decision is made.`)
+            .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.success);
+        return { embeds: [embed], components: [] };
     }
 }
 exports.ApplicationUIBuilder = ApplicationUIBuilder;

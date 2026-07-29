@@ -37,6 +37,8 @@ export interface IFormActions {
 export interface IFormRuntime {
     enabled: boolean;
     maxActiveApplications?: number;
+    resumeApplications?: boolean;
+    timeoutMinutes?: number;
 }
 
 export interface IForm {

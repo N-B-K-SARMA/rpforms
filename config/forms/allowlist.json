@@ -11,12 +11,18 @@
   },
   "review": {
     "channelId": "1531281025760497824",
-    "reviewerRoles": ["1531279940677271573"]
+    "reviewerRoles": [
+      "1531279940677271573"
+    ]
   },
   "actions": {
     "onApprove": {
-      "addRoles": ["1531280202020290762"],
-      "removeRoles": ["1504806859121361028"],
+      "addRoles": [
+        "1531280202020290762"
+      ],
+      "removeRoles": [
+        "1504806859121361028"
+      ],
       "sendDM": true,
       "logChannelId": "1531280859376914552"
     },
@@ -50,6 +56,8 @@
     }
   ],
   "runtime": {
-    "enabled": true
+    "enabled": true,
+    "resumeApplications": true,
+    "timeoutMinutes": 60
   }
 }

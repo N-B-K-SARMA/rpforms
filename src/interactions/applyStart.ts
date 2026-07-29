@@ -13,7 +13,7 @@ export default {
     }, memberRoles);
 
     if (result.error) {
-      await interaction.reply({ content: result.message, ephemeral: true });
+      await interaction.reply({ ...result.ui, ephemeral: true });
     } else {
       await interaction.reply({ ...result.ui, ephemeral: true });
     }

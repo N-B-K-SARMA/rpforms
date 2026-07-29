@@ -102,6 +102,8 @@ export class FormManager {
             errors.push('Missing or invalid "runtime" object.');
         } else {
             if (typeof data.runtime.enabled !== 'boolean') errors.push('runtime.enabled must be a boolean.');
+            if (data.runtime.resumeApplications !== undefined && typeof data.runtime.resumeApplications !== 'boolean') errors.push('runtime.resumeApplications must be a boolean.');
+            if (data.runtime.timeoutMinutes !== undefined && typeof data.runtime.timeoutMinutes !== 'number') errors.push('runtime.timeoutMinutes must be a number.');
         }
 
         return errors;

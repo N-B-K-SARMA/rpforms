@@ -1,4 +1,5 @@
 import { RPForms } from '../core/RPForms';
+import { ApplicationUIBuilder } from '../builders/ApplicationUIBuilder';
 
 export default {
   id: 'app_', // prefix for application flow
@@ -6,9 +7,9 @@ export default {
 
   async execute(interaction: any, client: any) {
     const parts = interaction.customId.split('_');
-    const action = parts[1]; // continue, cancel, prev, next, answer, edit, submit
+    const action = parts[1]; // continue, cancelConfirm, cancel, prev, next, answer, edit, submit
     const appId = parseInt(parts[2]);
-    const qIndex = parseInt(parts[3]);
+    const qIndex = parseInt(parts[3]) || 0;
 
     const request = {
       userId: interaction.user.id,
@@ -20,6 +21,14 @@ export default {
       request.qIndex = 0;
       const result = await RPForms.applications.showQuestion(request);
       if (result && result.ui) await interaction.update(result.ui);
+    } else if (action === 'cancelConfirm') {
+        const form = RPForms.forms.getForm('allowlist');
+        if (form) {
+            const ui = ApplicationUIBuilder.buildCancelConfirmEmbed(appId, form);
+            await interaction.update(ui);
+        } else {
+            await interaction.update(ApplicationUIBuilder.buildErrorEmbed('Form configuration missing.'));
+        }
     } else if (action === 'cancel') {
       await interaction.update({ content: 'Application cancelled.', embeds: [], components: [] });
       RPForms.events.emit('applicationClose', request);
@@ -41,9 +50,13 @@ export default {
       const staffChannel = guild.channels.cache.get(result.staffChannelId);
       
       if (staffChannel) {
-        const staffPing = RPForms.config.getAll().roles.staff && RPForms.config.getAll().roles.staff.length > 0
-          ? `<@&${RPForms.config.getAll().roles.staff[0]}>`
-          : '@here';
+        const form = RPForms.forms.getForm('allowlist');
+        let staffPing = '@here';
+        if (form && form.review.pingRoles && form.review.pingRoles.length > 0) {
+            staffPing = form.review.pingRoles.map(r => `<@&${r}>`).join(' ');
+        } else if (RPForms.config.getAll().roles.staff && RPForms.config.getAll().roles.staff.length > 0) {
+            staffPing = `<@&${RPForms.config.getAll().roles.staff[0]}>`;
+        }
           
         await staffChannel.send({
           content: `${staffPing} A new application has been submitted by <@${interaction.user.id}>!`,
@@ -51,11 +64,17 @@ export default {
         });
       }
 
-      await interaction.update({
-        content: 'Your application has been submitted for review!',
-        embeds: [],
-        components: [],
-      });
+      const form = RPForms.forms.getForm('allowlist');
+      if (form) {
+          const confirmUi = ApplicationUIBuilder.buildSubmissionConfirmationEmbed(appId, form);
+          await interaction.update(confirmUi);
+      } else {
+          await interaction.update({
+            content: 'Your application has been submitted for review!',
+            embeds: [],
+            components: [],
+          });
+      }
     }
   },
 };
