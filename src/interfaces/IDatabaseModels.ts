@@ -8,6 +8,7 @@ export enum ApplicationStatus {
 export interface IApplication {
     id: number;
     discord_id: string;
+    form_id: string;
     status: ApplicationStatus | string;
     created_at: Date;
     staff_channel_id?: string | null;
@@ -26,4 +27,5 @@ export interface IUser {
 
 export interface ICreateApplicationInput {
     discordId: string;
+    formId: string;
 }

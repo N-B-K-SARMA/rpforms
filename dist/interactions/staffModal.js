@@ -1,20 +1,28 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const RPForms_1 = require("../core/RPForms");
+const discord_js_1 = require("discord.js");
+const Application_1 = __importDefault(require("../models/Application"));
 exports.default = {
     id: 'staffmodal_',
     type: 'modal_prefix',
     async execute(interaction, client) {
-        const form = RPForms_1.RPForms.forms.getForm('allowlist');
-        if (form?.review?.reviewerRoles) {
-            const hasRole = form.review.reviewerRoles.some((roleId) => interaction.member.roles.cache.has(roleId));
-            if (!hasRole) {
-                return interaction.reply({ content: 'You do not have permission to review applications.', ephemeral: true });
-            }
-        }
         const parts = interaction.customId.split('_');
         const action = parts[1]; // reject, review
         const appId = parseInt(parts[2]);
+        const app = await Application_1.default.getApplicationById(appId);
+        const form = app ? RPForms_1.RPForms.forms.getForm(app.form_id) : null;
+        const adminRoles = RPForms_1.RPForms.config.getAll().roles.admin || [];
+        const globalStaffRoles = RPForms_1.RPForms.config.getAll().roles.staff || [];
+        const formStaffRoles = form?.review?.reviewerRoles || [];
+        const allowedRoles = [...adminRoles, ...globalStaffRoles, ...formStaffRoles];
+        const hasPermission = allowedRoles.some((roleId) => interaction.member.roles.cache.has(roleId));
+        if (!hasPermission) {
+            return interaction.reply({ content: 'You do not have permission to review applications.', ephemeral: true });
+        }
         const reason = interaction.fields.getTextInputValue('reasonText');
         const request = {
             appId,
@@ -26,11 +34,11 @@ exports.default = {
         if (result.success) {
             if (action === 'reject') {
                 const originalEmbed = interaction.message.embeds[0];
-                const updatedEmbed = { ...originalEmbed.data };
-                updatedEmbed.color = RPForms_1.RPForms.config.getAll().embeds.colors.danger;
-                const statusField = updatedEmbed.fields.find((f) => f.name === 'Status');
-                if (statusField)
-                    statusField.value = '🔴 Rejected';
+                const updatedEmbed = discord_js_1.EmbedBuilder.from(originalEmbed);
+                updatedEmbed.setColor(RPForms_1.RPForms.config.getAll().embeds.colors.danger);
+                if (updatedEmbed.data.description) {
+                    updatedEmbed.setDescription(updatedEmbed.data.description.replace('🟡 Pending Review', '🔴 Rejected'));
+                }
                 await interaction.update({ embeds: [updatedEmbed], components: [] });
             }
             else if (action === 'review') {

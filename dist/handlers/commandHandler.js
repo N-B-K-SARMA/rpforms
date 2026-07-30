@@ -11,7 +11,8 @@ exports.default = async (client) => {
     const commandFiles = fs_1.default.readdirSync(commandsPath).filter((file) => file.endsWith('.js'));
     const commands = [];
     for (const file of commandFiles) {
-        const command = require(path_1.default.join(commandsPath, file));
+        const req = require(path_1.default.join(commandsPath, file));
+        const command = req.default || req;
         if ('data' in command && 'execute' in command) {
             client.commands.set(command.data.name, command);
             commands.push(command.data.toJSON());

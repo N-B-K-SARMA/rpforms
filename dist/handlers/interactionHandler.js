@@ -9,7 +9,8 @@ exports.default = (client) => {
     const interactionsPath = path_1.default.join(__dirname, '..', 'interactions');
     const interactionFiles = fs_1.default.readdirSync(interactionsPath).filter((file) => file.endsWith('.js'));
     for (const file of interactionFiles) {
-        const interaction = require(path_1.default.join(interactionsPath, file));
+        const req = require(path_1.default.join(interactionsPath, file));
+        const interaction = req.default || req;
         client.interactions.set(interaction.id, interaction);
     }
 };

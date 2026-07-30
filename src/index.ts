@@ -1,7 +1,16 @@
-import { RPForms } from "./src/core/RPForms";\nimport dotenv from 'dotenv';
+import { RPForms } from "./core/RPForms";
+import dotenv from 'dotenv';
 dotenv.config();
 import { Client, GatewayIntentBits, Collection } from 'discord.js';
-import { initDatabase } from './src/database/init';
+
+declare module 'discord.js' {
+    interface Client {
+        commands: Collection<any, any>;
+        interactions: Collection<any, any>;
+    }
+}
+
+import { initDatabase } from './database/init';
 import fs from 'fs';
 import path from 'path';
 
@@ -22,11 +31,12 @@ async function startBot() {
         await initDatabase();
         
         // 2. Load Handlers
-        const handlersPath = path.join(__dirname, 'src', 'handlers');
+        const handlersPath = path.join(__dirname, 'handlers');
         const handlerFiles = fs.readdirSync(handlersPath).filter(file => file.endsWith('.js'));
         
         for (const file of handlerFiles) {
-            require(path.join(handlersPath, file))(client);
+            const handler = require(path.join(handlersPath, file));
+            (handler.default || handler)(client);
         }
         
         // 3. Login

@@ -1,7 +1,11 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const RPForms_1 = require("../core/RPForms");
 const ApplicationUIBuilder_1 = require("../builders/ApplicationUIBuilder");
+const Application_1 = __importDefault(require("../models/Application"));
 exports.default = {
     id: 'app_', // prefix for application flow
     type: 'button_prefix',
@@ -22,7 +26,8 @@ exports.default = {
                 await interaction.update(result.ui);
         }
         else if (action === 'cancelConfirm') {
-            const form = RPForms_1.RPForms.forms.getForm('allowlist');
+            const app = await Application_1.default.getApplicationById(appId);
+            const form = app ? RPForms_1.RPForms.forms.getForm(app.form_id) : null;
             if (form) {
                 const ui = ApplicationUIBuilder_1.ApplicationUIBuilder.buildCancelConfirmEmbed(appId, form);
                 await interaction.update(ui);
@@ -57,7 +62,8 @@ exports.default = {
             const guild = interaction.guild;
             const staffChannel = guild.channels.cache.get(result.staffChannelId);
             if (staffChannel) {
-                const form = RPForms_1.RPForms.forms.getForm('allowlist');
+                const app = await Application_1.default.getApplicationById(appId);
+                const form = app ? RPForms_1.RPForms.forms.getForm(app.form_id) : null;
                 let staffPing = '@here';
                 if (form && form.review.pingRoles && form.review.pingRoles.length > 0) {
                     staffPing = form.review.pingRoles.map(r => `<@&${r}>`).join(' ');
@@ -70,7 +76,8 @@ exports.default = {
                     ...result.ui
                 });
             }
-            const form = RPForms_1.RPForms.forms.getForm('allowlist');
+            const app = await Application_1.default.getApplicationById(appId);
+            const form = app ? RPForms_1.RPForms.forms.getForm(app.form_id) : null;
             if (form) {
                 const confirmUi = ApplicationUIBuilder_1.ApplicationUIBuilder.buildSubmissionConfirmationEmbed(appId, form);
                 await interaction.update(confirmUi);

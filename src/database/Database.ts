@@ -2,7 +2,7 @@ import { IApplication, IAnswer, IUser, ICreateApplicationInput, ApplicationStatu
 
 export interface IDatabase {
     connect(): Promise<void>;
-    query(sql: string, params?: unknown[]): Promise<unknown>;
+    query(sql: string, params?: any[]): Promise<any>;
     insertApplication(data: ICreateApplicationInput): Promise<number>;
     getApplicationById(id: number): Promise<IApplication | undefined>;
     getActiveApplication(discordId: string): Promise<IApplication | undefined>;

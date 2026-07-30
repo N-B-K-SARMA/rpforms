@@ -61,7 +61,7 @@ export class ReviewManager {
             await ApplicationModel.updateStatus(appId, 'rejected');
             
             // Determine cooldown from form settings
-            const form = RPForms.forms.getForm('allowlist');
+            const form = RPForms.forms.getForm(app.form_id);
             const cooldownHours = form?.actions?.onReject?.cooldownHours || 24;
             const cooldownMs = cooldownHours * 60 * 60 * 1000;
             const cooldownUntil = new Date(Date.now() + cooldownMs);
@@ -80,10 +80,13 @@ export class ReviewManager {
     }
 
     async submitApplication(appId: number, applicantStr: string, applicantId: string) {
+        const app = await ApplicationModel.getApplicationById(appId);
+        if (!app) return { error: 'Application not found' };
+
         await ApplicationModel.updateStatus(appId, 'review');
         
         const answers = await AnswerModel.getAnswers(appId);
-        const form = RPForms.forms.getForm('allowlist');
+        const form = RPForms.forms.getForm(app.form_id);
         const questions = form ? form.questions : [];
 
         const staffChannelId = form?.review?.channelId || RPForms.config.getAll().channels.staffReviewChannel || (RPForms.config.getAll().channels as any).applicationCategory;

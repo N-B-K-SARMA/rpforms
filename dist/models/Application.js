@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const RPForms_1 = require("../core/RPForms");
 class ApplicationModel {
-    static async createApplication(discordId) {
-        return await RPForms_1.RPForms.database.insertApplication({ discordId });
+    static async createApplication(discordId, formId) {
+        return await RPForms_1.RPForms.database.insertApplication({ discordId, formId });
     }
     static async getApplicationById(id) {
         return await RPForms_1.RPForms.database.getApplicationById(id);

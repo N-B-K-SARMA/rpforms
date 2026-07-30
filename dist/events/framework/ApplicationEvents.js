@@ -13,8 +13,8 @@ function registerApplicationEvents(client) {
         const app = await Application_1.default.getApplicationById(appId);
         if (!app)
             return;
-        // In a real system, the DB would track which form was used. For now, we assume 'allowlist'
-        const form = RPForms_1.RPForms.forms.getForm('allowlist');
+        // Fetch the corresponding form configuration
+        const form = RPForms_1.RPForms.forms.getForm(app.form_id);
         if (!form)
             return;
         const guild = client.guilds.cache.first();
@@ -76,7 +76,7 @@ function registerApplicationEvents(client) {
         const app = await Application_1.default.getApplicationById(appId);
         if (!app)
             return;
-        const form = RPForms_1.RPForms.forms.getForm('allowlist');
+        const form = RPForms_1.RPForms.forms.getForm(app.form_id);
         if (!form)
             return;
         const guild = client.guilds.cache.first();
@@ -150,7 +150,7 @@ function registerApplicationEvents(client) {
         const app = await Application_1.default.getApplicationById(appId);
         if (!app)
             return;
-        const form = RPForms_1.RPForms.forms.getForm('allowlist');
+        const form = RPForms_1.RPForms.forms.getForm(app.form_id);
         if (!form)
             return;
         const guild = client.guilds.cache.first();

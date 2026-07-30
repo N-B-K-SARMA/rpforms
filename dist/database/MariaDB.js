@@ -11,7 +11,7 @@ class MariaDB {
     }
     async insertApplication(data) {
         const pool = (0, pool_1.getPool)();
-        const [result] = await pool.query('INSERT INTO applications (discord_id, status) VALUES (?, ?)', [data.discordId, IDatabaseModels_1.ApplicationStatus.PENDING]);
+        const [result] = await pool.query('INSERT INTO applications (discord_id, form_id, status) VALUES (?, ?, ?)', [data.discordId, data.formId, IDatabaseModels_1.ApplicationStatus.PENDING]);
         return result.insertId;
     }
     async getApplicationById(id) {

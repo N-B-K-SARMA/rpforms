@@ -1,5 +1,6 @@
 import { RPForms } from '../core/RPForms';
 import { ApplicationUIBuilder } from '../builders/ApplicationUIBuilder';
+import ApplicationModel from '../models/Application';
 
 export default {
   id: 'app_', // prefix for application flow
@@ -22,7 +23,8 @@ export default {
       const result = await RPForms.applications.showQuestion(request);
       if (result && result.ui) await interaction.update(result.ui);
     } else if (action === 'cancelConfirm') {
-        const form = RPForms.forms.getForm('allowlist');
+        const app = await ApplicationModel.getApplicationById(appId);
+        const form = app ? RPForms.forms.getForm(app.form_id) : null;
         if (form) {
             const ui = ApplicationUIBuilder.buildCancelConfirmEmbed(appId, form);
             await interaction.update(ui);
@@ -50,7 +52,8 @@ export default {
       const staffChannel = guild.channels.cache.get(result.staffChannelId);
       
       if (staffChannel) {
-        const form = RPForms.forms.getForm('allowlist');
+        const app = await ApplicationModel.getApplicationById(appId);
+        const form = app ? RPForms.forms.getForm(app.form_id) : null;
         let staffPing = '@here';
         if (form && form.review.pingRoles && form.review.pingRoles.length > 0) {
             staffPing = form.review.pingRoles.map(r => `<@&${r}>`).join(' ');
@@ -64,7 +67,8 @@ export default {
         });
       }
 
-      const form = RPForms.forms.getForm('allowlist');
+      const app = await ApplicationModel.getApplicationById(appId);
+      const form = app ? RPForms.forms.getForm(app.form_id) : null;
       if (form) {
           const confirmUi = ApplicationUIBuilder.buildSubmissionConfirmationEmbed(appId, form);
           await interaction.update(confirmUi);

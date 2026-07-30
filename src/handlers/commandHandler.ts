@@ -8,7 +8,8 @@ export default async (client: any) => {
   const commands = [];
 
   for (const file of commandFiles) {
-    const command = require(path.join(commandsPath, file));
+    const req = require(path.join(commandsPath, file));
+    const command = req.default || req;
     if ('data' in command && 'execute' in command) {
       client.commands.set(command.data.name, command);
       commands.push(command.data.toJSON());

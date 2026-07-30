@@ -11,7 +11,7 @@ export class MariaDB implements IDatabase {
     }
     async insertApplication(data: ICreateApplicationInput): Promise<number> {
         const pool = getPool();
-        const [result] = await pool.query<ResultSetHeader>('INSERT INTO applications (discord_id, status) VALUES (?, ?)', [data.discordId, ApplicationStatus.PENDING]);
+        const [result] = await pool.query<ResultSetHeader>('INSERT INTO applications (discord_id, form_id, status) VALUES (?, ?, ?)', [data.discordId, data.formId, ApplicationStatus.PENDING]);
         return result.insertId;
     }
     async getApplicationById(id: number): Promise<IApplication | undefined> {

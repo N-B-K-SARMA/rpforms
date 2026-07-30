@@ -6,7 +6,8 @@ export default (client: any) => {
   const interactionFiles = fs.readdirSync(interactionsPath).filter((file) => file.endsWith('.js'));
 
   for (const file of interactionFiles) {
-    const interaction = require(path.join(interactionsPath, file));
+    const req = require(path.join(interactionsPath, file));
+    const interaction = req.default || req;
     client.interactions.set(interaction.id, interaction);
   }
 };

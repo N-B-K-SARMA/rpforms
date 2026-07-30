@@ -14,6 +14,14 @@ export default {
         )
         .addSubcommand(subcommand =>
             subcommand
+                .setName('panel')
+                .setDescription('Create an application panel in the current channel')
+                .addStringOption(option =>
+                    option.setName('form_id').setDescription('The ID of the form').setRequired(true)
+                )
+        )
+        .addSubcommand(subcommand =>
+            subcommand
                 .setName('info')
                 .setDescription('View details about a specific form')
                 .addStringOption(option =>
@@ -36,6 +44,38 @@ export default {
         if (subcommand === 'reload') {
             RPForms.forms.reload();
             await interaction.reply({ content: 'Forms reloaded successfully.', ephemeral: true });
+        } else if (subcommand === 'panel') {
+            const formId = interaction.options.getString('form_id');
+            const form = RPForms.forms.getForm(formId);
+
+            if (!form) {
+                return interaction.reply({ content: `Error: Form "${formId}" not found in config/forms`, ephemeral: true });
+            }
+
+            const embed = new EmbedBuilder()
+                .setTitle(form.metadata.title)
+                .setDescription(form.metadata.description)
+                .setColor(RPForms.config.getAll().embeds.colors.primary as any)
+                .setFooter({ text: RPForms.config.getAll().embeds.footer.text, iconURL: RPForms.config.getAll().embeds.footer.iconURL });
+
+            if (RPForms.config.getAll().embeds.banner) embed.setImage(RPForms.config.getAll().embeds.banner);
+            if (RPForms.config.getAll().embeds.logo) embed.setThumbnail(RPForms.config.getAll().embeds.logo);
+
+            const buttonStyle = form.button.style.toLowerCase() === 'success' ? 3 
+                              : form.button.style.toLowerCase() === 'danger' ? 4 
+                              : form.button.style.toLowerCase() === 'secondary' ? 2
+                              : 1;
+
+            const { ActionRowBuilder, ButtonBuilder } = require('discord.js');
+            const button = new ButtonBuilder()
+                .setCustomId(`apply_start_${formId}`)
+                .setLabel(form.button.label)
+                .setStyle(buttonStyle);
+
+            const row = new ActionRowBuilder().addComponents(button);
+
+            await interaction.reply({ content: `Panel for \`${formId}\` created successfully!`, ephemeral: true });
+            await interaction.channel.send({ embeds: [embed], components: [row] });
         } else if (subcommand === 'list') {
             const forms = RPForms.forms.getForms();
             if (forms.length === 0) {

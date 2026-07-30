@@ -46,7 +46,7 @@ export class ApplicationManager {
             // There's an active application. We can resume it.
             isResume = true;
         } else {
-            const newAppId = await ApplicationModel.createApplication(userId);
+            const newAppId = await ApplicationModel.createApplication(userId, formId);
             app = await ApplicationModel.getApplicationById(newAppId);
         }
 
@@ -70,9 +70,10 @@ export class ApplicationManager {
     async showQuestion(request: ShowQuestionRequest) {
         const { appId, qIndex } = request;
         
-        // We really should store formId in the database application row. 
-        // For now, we will default to allowlist or we could try to guess. Let's just use allowlist until schema is updated.
-        const form = RPForms.forms.getForm('allowlist'); 
+        const app = await ApplicationModel.getApplicationById(appId);
+        if (!app) return { ui: ApplicationUIBuilder.buildErrorEmbed('Application not found.') };
+
+        const form = RPForms.forms.getForm(app.form_id); 
         if (!form) return { ui: ApplicationUIBuilder.buildErrorEmbed('Form configuration missing.') };
 
         const questions = form.questions || [];
@@ -91,7 +92,10 @@ export class ApplicationManager {
 
     async showAnswerModal(request: ShowQuestionRequest) {
         const { appId, qIndex } = request;
-        const form = RPForms.forms.getForm('allowlist');
+        const app = await ApplicationModel.getApplicationById(appId);
+        if (!app) return null;
+
+        const form = RPForms.forms.getForm(app.form_id);
         const questions = form ? form.questions : [];
         const question = questions[qIndex];
         
@@ -105,7 +109,10 @@ export class ApplicationManager {
 
     async answerQuestion(request: AnswerQuestionRequest) {
         const { appId, qIndex, answerText } = request;
-        const form = RPForms.forms.getForm('allowlist');
+        const app = await ApplicationModel.getApplicationById(appId);
+        if (!app) return false;
+
+        const form = RPForms.forms.getForm(app.form_id);
         const questions = form ? form.questions : [];
         const question = questions[qIndex];
         
@@ -127,7 +134,10 @@ export class ApplicationManager {
     }
 
     async showFinalReview(appId: number) {
-        const form = RPForms.forms.getForm('allowlist');
+        const app = await ApplicationModel.getApplicationById(appId);
+        if (!app) return { ui: ApplicationUIBuilder.buildErrorEmbed('Application not found.') };
+
+        const form = RPForms.forms.getForm(app.form_id);
         if (!form) return { ui: ApplicationUIBuilder.buildErrorEmbed('Form configuration missing.') };
         
         const questions = form.questions || [];
@@ -144,14 +154,14 @@ export class ApplicationManager {
             if (!form.runtime.timeoutMinutes) continue;
 
             const [rows]: any = await RPForms.database.query(
-                'SELECT * FROM applications WHERE status = "pending"'
+                'SELECT * FROM applications WHERE status = "pending" AND form_id = ?',
+                [form.metadata.id]
             );
 
             const timeoutMs = form.runtime.timeoutMinutes * 60 * 1000;
             const now = new Date().getTime();
 
             for (const app of rows) {
-                // We should technically check if this app belongs to this form. For now assuming all are allowlist.
                 const appTime = new Date(app.created_at).getTime();
                 if (now - appTime > timeoutMs) {
                     await RPForms.database.query('UPDATE applications SET status = "cancelled" WHERE id = ?', [app.id]);

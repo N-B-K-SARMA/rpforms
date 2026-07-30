@@ -5,6 +5,8 @@ export default {
   type: 'modal_prefix',
 
   async execute(interaction: any, client: any) {
+    await interaction.deferUpdate();
+
     const parts = interaction.customId.split('_');
     const appId = parseInt(parts[2]);
     const qIndex = parseInt(parts[3]);
@@ -25,9 +27,9 @@ export default {
     });
 
     if (result && result.ui) {
-      await interaction.update(result.ui);
+      await interaction.editReply(result.ui);
     } else {
-      await interaction.update({ content: 'Question not found.', embeds: [], components: [] });
+      await interaction.editReply({ content: 'Question not found.', embeds: [], components: [] });
     }
   },
 };

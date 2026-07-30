@@ -63,7 +63,7 @@ class ReviewManager {
             console.log(`[ReviewManager] App #${appId} rejected by ${staffId}. Reason: ${reason}`);
             await Application_1.default.updateStatus(appId, 'rejected');
             // Determine cooldown from form settings
-            const form = RPForms_1.RPForms.forms.getForm('allowlist');
+            const form = RPForms_1.RPForms.forms.getForm(app.form_id);
             const cooldownHours = form?.actions?.onReject?.cooldownHours || 24;
             const cooldownMs = cooldownHours * 60 * 60 * 1000;
             const cooldownUntil = new Date(Date.now() + cooldownMs);
@@ -80,9 +80,12 @@ class ReviewManager {
         return { error: 'Invalid modal action' };
     }
     async submitApplication(appId, applicantStr, applicantId) {
+        const app = await Application_1.default.getApplicationById(appId);
+        if (!app)
+            return { error: 'Application not found' };
         await Application_1.default.updateStatus(appId, 'review');
         const answers = await Answer_1.default.getAnswers(appId);
-        const form = RPForms_1.RPForms.forms.getForm('allowlist');
+        const form = RPForms_1.RPForms.forms.getForm(app.form_id);
         const questions = form ? form.questions : [];
         const staffChannelId = form?.review?.channelId || RPForms_1.RPForms.config.getAll().channels.staffReviewChannel || RPForms_1.RPForms.config.getAll().channels.applicationCategory;
         await Application_1.default.updateStatus(appId, 'review', staffChannelId);

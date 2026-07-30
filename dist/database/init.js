@@ -48,6 +48,7 @@ async function createTables() {
         `CREATE TABLE IF NOT EXISTS applications (
             id INT AUTO_INCREMENT PRIMARY KEY,
             discord_id VARCHAR(255) NOT NULL,
+            form_id VARCHAR(255) NOT NULL DEFAULT 'allowlist',
             status ENUM('pending', 'review', 'approved', 'rejected') DEFAULT 'pending',
             staff_channel_id VARCHAR(255) DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -82,5 +83,16 @@ async function createTables() {
     ];
     for (const query of queries) {
         await RPForms_1.RPForms.database.query(query);
+    }
+    // Patch existing tables gracefully
+    try {
+        await RPForms_1.RPForms.database.query(`ALTER TABLE applications ADD COLUMN form_id VARCHAR(255) NOT NULL DEFAULT 'allowlist'`);
+        console.log('✓ Patched applications table with form_id');
+    }
+    catch (e) {
+        // Ignore duplicate column errors (Code 1060)
+        if (e.code !== 'ER_DUP_FIELDNAME') {
+            console.warn('Note: Could not patch form_id column (it may already exist or database is locked).');
+        }
     }
 }

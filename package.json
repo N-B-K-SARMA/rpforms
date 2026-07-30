@@ -4,6 +4,7 @@
   "description": "A modern open-source Discord application framework for roleplay communities.",
   "main": "dist/index.js",
   "scripts": {
+    "start": "node dist/index.js",
     "build": "tsc",
     "dev": "tsc -w",
     "lint": "eslint \"src/**/*.ts\"",

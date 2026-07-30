@@ -55,10 +55,9 @@ class ApplicationUIBuilder {
             : '';
         const embed = new discord_js_1.EmbedBuilder()
             .setTitle(form?.embeds?.questionEmbed?.title || `Question ${qIndex + 1} of ${totalQuestions}`)
-            .setDescription(`${this.getProgressBar(qIndex + 1, totalQuestions)} (${Math.round(((qIndex + 1) / totalQuestions) * 100)}%)\n\n` +
-            `**${question.label}** ${requirementText}\n` +
+            .setDescription(`**${question.label}** ${requirementText}\n` +
             `${question.question}${lengthText}\n\n` +
-            `**Your Answer:**\n\`\`\`text\n${answerText ? answerText : 'No answer provided yet.'}\n\`\`\``)
+            `**Your Answer:**\n\`\`\`text\n${answerText ? answerText : 'No answer provided yet.'}\n\`\`\`\n\n*(Progress: ${qIndex + 1}/${totalQuestions})*`)
             .setColor(form?.embeds?.questionEmbed?.color || RPForms_1.RPForms.config.getAll().embeds.colors.primary);
         if (form?.embeds?.questionEmbed?.thumbnail) {
             embed.setThumbnail(form.embeds.questionEmbed.thumbnail);
@@ -92,9 +91,9 @@ class ApplicationUIBuilder {
             const q = questions[i];
             const a = answers.find((ans) => String(ans.question_id) === String(q.id));
             let displayAnswer = a ? a.answer_text : '*(No answer)*';
-            if (displayAnswer.length > 1024)
-                displayAnswer = displayAnswer.substring(0, 1020) + '...';
-            embed.addFields({ name: `Q${i + 1}: ${q.label}`, value: displayAnswer });
+            if (displayAnswer.length > 1010)
+                displayAnswer = displayAnswer.substring(0, 1010) + '...';
+            embed.addFields({ name: `Q${i + 1}: ${q.label}`, value: `\`\`\`text\n${displayAnswer}\n\`\`\`` });
         }
         const row = new discord_js_1.ActionRowBuilder().addComponents(new discord_js_1.ButtonBuilder()
             .setCustomId(`app_continue_${appId}_0`) // Goes back to first question to edit

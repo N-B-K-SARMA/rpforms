@@ -7,9 +7,13 @@ export default {
   async execute(interaction: any, client: any) {
     const memberRoles = interaction.member.roles.cache.map((r: any) => r.id);
     
+    // customId is 'apply_start_formId' or just 'apply_start' for legacy panels
+    const parts = interaction.customId.split('_');
+    const formId = parts[2] || 'allowlist';
+
     const result = await RPForms.applications.startApplication({
       userId: interaction.user.id,
-      formId: 'allowlist'
+      formId: formId
     }, memberRoles);
 
     if (result.error) {
