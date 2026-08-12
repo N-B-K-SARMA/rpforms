@@ -1,21 +1,21 @@
 export default {
-  guildId: '1504771420650213528',
+  guildId: '1517919692809961513',
 
   roles: {
-    staff: ['1531279940677271573'],
-    admin: ['1504772154351157288'],
-    whitelistTeam: ['1531279940677271573'],
-    reviewTeam: ['1531279940677271573'],
-    allowlisted: '1531280202020290762',
-    nonWhitelisted: '1504806859121361028', // Optional
+    staff: ['1534982810438471850'],
+    admin: ['1534982810438471850'],
+    whitelistTeam: ['1534982810438471850'],
+    reviewTeam: ['1534982810438471850'],
+    allowlisted: '1534982836833095852',
+    nonWhitelisted: '', // Optional
   },
 
   channels: {
-    staffReviewChannel: '1531281025760497824', // REPLACE THIS with the Text Channel ID of #whitelist-approve
-    acceptedLogChannel: '1531280859376914552',
-    rejectedLogChannel: '1531280859376914552',
-    reviewLogChannel: '1531280859376914552',
-    allowlistLogs: '1531281025760497824',
+    staffReviewChannel: '1534983013136470117', // REPLACE THIS with the Text Channel ID of #whitelist-approve
+    acceptedLogChannel: '1537169449625329726',
+    rejectedLogChannel: '1537169449625329726',
+    reviewLogChannel: '1537169449625329726',
+    allowlistLogs: '1537169449625329726',
   },
 
   embeds: {
