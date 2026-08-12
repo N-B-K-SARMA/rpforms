@@ -27,7 +27,7 @@ export default {
       default: '#000000', // Black
     },
     footer: {
-      text: "Daddy's Roleplay - Allowlist Manager",
+      text: "Horizon City Roleplay - Allowlist Manager",
       iconURL: 'https://i.ibb.co/TBLQsyLf/logo-2-0.png', // Replace with actual logo URL
     },
     logo: 'https://i.ibb.co/TBLQsyLf/logo-2-0.png', // Replace with actual logo URL

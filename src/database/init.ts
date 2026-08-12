@@ -15,7 +15,7 @@ export async function initDatabase() {
 
     console.log('✓ Connected to MariaDB');
 
-    const dbName = process.env.DB_NAME || 'daddys_roleplay';
+    const dbName = process.env.DB_NAME || 'horizon_city_roleplay';
     await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
     console.log('✓ Database Ready');
     await connection.end();

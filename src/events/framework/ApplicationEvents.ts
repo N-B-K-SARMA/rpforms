@@ -42,7 +42,7 @@ export function registerApplicationEvents(client: any) {
         }
 
         const acceptedEmbed = new EmbedBuilder()
-            .setDescription(`Congratulations! Your allow-list application has been accepted. Welcome to Daddy's Roleplay!`)
+            .setDescription(`Congratulations! Your allow-list application has been accepted. Welcome to Horizon City Roleplay!`)
             .addFields(
                 { name: 'User', value: `<@${app.discord_id}>`, inline: true },
                 { name: 'Time of Acceptance', value: `<t:${Math.floor(Date.now() / 1000)}:f>`, inline: true },
