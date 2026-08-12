@@ -5,7 +5,7 @@ export default {
     staff: ['1531279940677271573'],
     admin: ['1504772154351157288'],
     whitelistTeam: ['1531279940677271573'],
-    reviewTeam: ['REVIEW_TEAM_ROLE_ID'],
+    reviewTeam: ['1531279940677271573'],
     allowlisted: '1531280202020290762',
     nonWhitelisted: '1504806859121361028', // Optional
   },

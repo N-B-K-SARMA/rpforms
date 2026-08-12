@@ -1,1 +1,0 @@
-const fs = require("fs"); let c = fs.readFileSync("./src/commands/application.ts", "utf8"); c = c.replace(/questions\.map/g, "(questions as any).map"); c = c.replace(/questions\.filter/g, "(questions as any).filter"); fs.writeFileSync("./src/commands/application.ts", c);
