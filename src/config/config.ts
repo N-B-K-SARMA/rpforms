@@ -28,10 +28,10 @@ export default {
     },
     footer: {
       text: "Daddy's Roleplay - Allowlist Manager",
-      iconURL: 'https://i.ibb.co/Vp31xZJy/my-Logo.png', // Replace with actual logo URL
+      iconURL: 'https://i.ibb.co/TBLQsyLf/logo-2-0.png', // Replace with actual logo URL
     },
-    logo: 'https://i.ibb.co/Vp31xZJy/my-Logo.png', // Replace with actual logo URL
-    banner: 'https://i.ibb.co/Vp31xZJy/my-Logo.png', // Replace with actual banner URL
+    logo: 'https://i.ibb.co/TBLQsyLf/logo-2-0.png', // Replace with actual logo URL
+    banner: 'https://i.ibb.co/G3b8tt6c/banner-image.png', // Replace with actual banner URL
   },
 
   settings: {
