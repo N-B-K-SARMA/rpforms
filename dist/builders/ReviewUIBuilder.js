@@ -6,20 +6,22 @@ const RPForms_1 = require("../core/RPForms");
 class ReviewUIBuilder {
     static buildStaffReviewEmbed(applicantStr, applicantId, appId, questions, answers, historyInfo) {
         const embed = new discord_js_1.EmbedBuilder()
-            .setTitle(`Application Review (#${appId})`)
+            .setTitle(`Application Review #${appId}`)
             .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.warning)
             .setTimestamp();
-        let description = `**Applicant:** ${applicantStr} (<@${applicantId}>)\n**Discord ID:** \`${applicantId}\`\n**Status:** 🟡 Pending Review\n`;
+        let description = `**Applicant**\n<@${applicantId}>\n\n**Discord ID**\n\`${applicantId}\`\n\n**Status**\n🟡 Pending Review\n`;
         if (historyInfo) {
-            description += `\n**History:** ${historyInfo.total} Total | ${historyInfo.approved} Approved | ${historyInfo.rejected} Rejected`;
+            description += `\n**Application History**\n\`${historyInfo.total} Total • ${historyInfo.approved} Approved • ${historyInfo.rejected} Rejected\`\n`;
         }
         embed.setDescription(description);
         for (const q of questions) {
             const a = answers.find((ans) => String(ans.question_id) === String(q.id));
             let displayAnswer = a ? a.answer_text : '*(No answer)*';
-            if (displayAnswer.length > 1024)
-                displayAnswer = displayAnswer.substring(0, 1020) + '...';
-            embed.addFields({ name: q.label || q.question, value: `\`\`\`text\n${displayAnswer}\n\`\`\`` });
+            if (displayAnswer.length > 1000)
+                displayAnswer = displayAnswer.substring(0, 1000) + '... *(Truncated)*';
+            // Use blockquotes for a cleaner UI
+            const formattedAnswer = displayAnswer.split('\n').map(line => `> ${line}`).join('\n');
+            embed.addFields({ name: q.label || q.question, value: formattedAnswer + '\n\u200B' }); // zero-width space for padding
         }
         const row = new discord_js_1.ActionRowBuilder().addComponents(new discord_js_1.ButtonBuilder()
             .setCustomId(`staff_approve_${appId}`)

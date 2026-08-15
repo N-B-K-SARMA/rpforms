@@ -12,7 +12,7 @@ class ApplicationModel {
         return await RPForms_1.RPForms.database.getActiveApplication(discordId);
     }
     static async updateStatus(id, status, staffChannelId = null) {
-        await RPForms_1.RPForms.database.updateApplicationStatus(id, status, staffChannelId);
+        return await RPForms_1.RPForms.database.updateApplicationStatus(id, status, staffChannelId);
     }
     static async getApplicationHistory(discordId) {
         return await RPForms_1.RPForms.database.getApplicationHistory(discordId);

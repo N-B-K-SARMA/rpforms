@@ -30,6 +30,13 @@ exports.default = {
             applicantId,
             staffId: interaction.user.id
         };
+        let warningMsg = '';
+        if (form && action === 'approve') {
+            const logChannelId = form.actions?.onApprove?.logChannelId;
+            if (logChannelId && !interaction.guild.channels.cache.get(logChannelId)) {
+                warningMsg = '⚠️ The application was approved, but the configured response log channel could not be found. Please check your configuration.';
+            }
+        }
         const result = await RPForms_1.RPForms.reviews.processAction(request);
         if (result.modal) {
             await interaction.showModal(result.modal);
@@ -46,10 +53,24 @@ exports.default = {
             if (action === 'approve') {
                 updatedEmbed.setColor(RPForms_1.RPForms.config.getAll().embeds.colors.success);
                 if (updatedEmbed.data.description) {
-                    updatedEmbed.setDescription(updatedEmbed.data.description.replace('🟡 Pending Review', '🟢 Approved'));
+                    // Be robust against existing strange characters in the previous status
+                    updatedEmbed.setDescription(updatedEmbed.data.description.replace(/.*Pending Review.*/, '**Status**\n🟢 Approved'));
                 }
             }
-            await interaction.update({ embeds: [updatedEmbed], components: [] });
+            const newComponents = interaction.message.components.map((row) => {
+                return discord_js_1.ActionRowBuilder.from(row).setComponents(row.components.map((c) => {
+                    const btn = discord_js_1.ButtonBuilder.from(c);
+                    const id = c.customId || '';
+                    if (id.includes('staff_approve_') || id.includes('staff_reject_') || id.includes('staff_review_')) {
+                        btn.setDisabled(true);
+                    }
+                    return btn;
+                }));
+            });
+            await interaction.update({ embeds: [updatedEmbed], components: newComponents });
+            if (warningMsg) {
+                await interaction.followUp({ content: warningMsg, ephemeral: true });
+            }
         }
         else if (result.error) {
             await interaction.reply({ content: `Error: ${result.error}`, ephemeral: true });

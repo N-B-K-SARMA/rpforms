@@ -1,5 +1,5 @@
 import { RPForms } from '../core/RPForms';
-import { EmbedBuilder } from 'discord.js';
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder } from 'discord.js';
 import ApplicationModel from '../models/Application';
 
 export default {
@@ -33,6 +33,14 @@ export default {
       staffId: interaction.user.id
     };
 
+    let warningMsg = '';
+    if (form && action === 'approve') {
+        const logChannelId = form.actions?.onApprove?.logChannelId;
+        if (logChannelId && !interaction.guild.channels.cache.get(logChannelId)) {
+            warningMsg = '⚠️ The application was approved, but the configured response log channel could not be found. Please check your configuration.';
+        }
+    }
+
     const result = await RPForms.reviews.processAction(request);
     
     if (result.modal) {
@@ -48,11 +56,29 @@ export default {
       if (action === 'approve') {
           updatedEmbed.setColor(RPForms.config.getAll().embeds.colors.success as any);
           if (updatedEmbed.data.description) {
-              updatedEmbed.setDescription(updatedEmbed.data.description.replace('🟡 Pending Review', '🟢 Approved'));
+              // Be robust against existing strange characters in the previous status
+              updatedEmbed.setDescription(updatedEmbed.data.description.replace(/.*Pending Review.*/, '**Status**\n🟢 Approved'));
           }
       }
       
-      await interaction.update({ embeds: [updatedEmbed], components: [] });
+      const newComponents = interaction.message.components.map((row: any) => {
+          return ActionRowBuilder.from(row).setComponents(
+              row.components.map((c: any) => {
+                  const btn = ButtonBuilder.from(c as any);
+                  const id = c.customId || '';
+                  if (id.includes('staff_approve_') || id.includes('staff_reject_') || id.includes('staff_review_')) {
+                      btn.setDisabled(true);
+                  }
+                  return btn;
+              })
+          );
+      });
+      
+      await interaction.update({ embeds: [updatedEmbed], components: newComponents as any[] });
+
+      if (warningMsg) {
+          await interaction.followUp({ content: warningMsg, ephemeral: true });
+      }
     } else if (result.error) {
         await interaction.reply({ content: `Error: ${result.error}`, ephemeral: true });
     }

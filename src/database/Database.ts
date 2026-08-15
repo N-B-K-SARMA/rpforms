@@ -6,7 +6,7 @@ export interface IDatabase {
     insertApplication(data: ICreateApplicationInput): Promise<number>;
     getApplicationById(id: number): Promise<IApplication | undefined>;
     getActiveApplication(discordId: string): Promise<IApplication | undefined>;
-    updateApplicationStatus(id: number, status: ApplicationStatus | string, staffChannelId?: string | null): Promise<void>;
+    updateApplicationStatus(id: number, status: string, staffChannelId?: string | null): Promise<boolean>;
     saveAnswer(applicationId: number, questionId: string, answerText: string): Promise<void>;
     getAnswers(applicationId: number): Promise<IAnswer[]>;
     getAnswer(applicationId: number, questionId: string): Promise<IAnswer | undefined>;

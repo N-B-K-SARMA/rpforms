@@ -26,7 +26,9 @@ class MariaDB {
     }
     async updateApplicationStatus(id, status, staffChannelId = null) {
         const pool = (0, pool_1.getPool)();
-        await pool.query('UPDATE applications SET status = ?, staff_channel_id = COALESCE(?, staff_channel_id) WHERE id = ?', [status, staffChannelId, id]);
+        // Atomic update: only allow transition if currently in a non-final state (pending or review)
+        const [result] = await pool.query('UPDATE applications SET status = ?, staff_channel_id = COALESCE(?, staff_channel_id) WHERE id = ? AND status IN (?, ?)', [status, staffChannelId, id, IDatabaseModels_1.ApplicationStatus.PENDING, IDatabaseModels_1.ApplicationStatus.REVIEW]);
+        return result.affectedRows > 0;
     }
     async saveAnswer(applicationId, questionId, answerText) {
         const pool = (0, pool_1.getPool)();

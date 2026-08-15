@@ -12,83 +12,114 @@ const ReviewUIBuilder_1 = require("../builders/ReviewUIBuilder");
 const ModalUIBuilder_1 = require("../builders/ModalUIBuilder");
 const discord_js_1 = require("discord.js");
 class ReviewManager {
+    processingApps = new Set();
     async processAction(request) {
         const { appId, action, applicantId, staffId } = request;
+        if (this.processingApps.has(appId)) {
+            return { error: 'This application is currently being processed by another staff member.' };
+        }
         const app = await Application_1.default.getApplicationById(appId);
         if (!app)
             return { error: 'Application not found' };
         // Prevent race conditions: action is only allowed if it's currently pending or in review
         if (action !== 'history' && app.status !== 'pending' && app.status !== 'review') {
-            return { error: 'Application has already been processed.' };
+            return { error: 'This application has already been finalized.' };
         }
-        if (action === 'approve') {
-            console.log(`[ReviewManager] App #${appId} approved by ${staffId}`);
-            await Application_1.default.updateStatus(appId, 'approved');
-            RPForms_1.RPForms.events.emit('applicationApprove', request);
-            return { success: true };
+        if (action !== 'history' && action !== 'review' && action !== 'reject') {
+            this.processingApps.add(appId);
         }
-        else if (action === 'reject') {
-            return { modal: ModalUIBuilder_1.ModalUIBuilder.buildReasonModal(appId, 'reject') };
+        try {
+            if (action === 'approve') {
+                const success = await Application_1.default.updateStatus(appId, 'approved');
+                if (!success)
+                    return { error: 'This application has already been finalized.' };
+                console.log(`[ReviewManager] App #${appId} approved by ${staffId}`);
+                RPForms_1.RPForms.events.emit('applicationApprove', request);
+                return { success: true };
+            }
+            else if (action === 'reject') {
+                return { modal: ModalUIBuilder_1.ModalUIBuilder.buildReasonModal(appId, 'reject') };
+            }
+            else if (action === 'review') {
+                return { modal: ModalUIBuilder_1.ModalUIBuilder.buildReasonModal(appId, 'review') };
+            }
+            else if (action === 'close') {
+                const success = await Application_1.default.updateStatus(appId, 'closed');
+                if (!success)
+                    return { error: 'This application has already been finalized.' };
+                console.log(`[ReviewManager] App #${appId} closed by ${staffId}`);
+                RPForms_1.RPForms.events.emit('applicationClose', request);
+                const closeEmbed = new discord_js_1.EmbedBuilder()
+                    .setTitle(`Application #${appId} Closed`)
+                    .setDescription('This application has been closed by staff without approval or rejection.')
+                    .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.secondary);
+                return { success: true, ui: { embeds: [closeEmbed], components: [] } };
+            }
+            else if (action === 'history') {
+                if (!applicantId)
+                    return { error: 'Applicant ID not provided' };
+                const history = await Application_1.default.getApplicationHistory(applicantId);
+                return { success: true, ui: ReviewUIBuilder_1.ReviewUIBuilder.buildHistoryEmbed('Applicant', applicantId, history) };
+            }
+            return { error: 'Invalid action' };
         }
-        else if (action === 'review') {
-            return { modal: ModalUIBuilder_1.ModalUIBuilder.buildReasonModal(appId, 'review') };
+        finally {
+            this.processingApps.delete(appId);
         }
-        else if (action === 'close') {
-            console.log(`[ReviewManager] App #${appId} closed by ${staffId}`);
-            await Application_1.default.updateStatus(appId, 'closed');
-            RPForms_1.RPForms.events.emit('applicationClose', request);
-            const closeEmbed = new discord_js_1.EmbedBuilder()
-                .setTitle(`Application #${appId} Closed`)
-                .setDescription('This application has been closed by staff without approval or rejection.')
-                .setColor(RPForms_1.RPForms.config.getAll().embeds.colors.secondary);
-            return { success: true, ui: { embeds: [closeEmbed], components: [] } };
-        }
-        else if (action === 'history') {
-            if (!applicantId)
-                return { error: 'Applicant ID not provided' };
-            const history = await Application_1.default.getApplicationHistory(applicantId);
-            return { success: true, ui: ReviewUIBuilder_1.ReviewUIBuilder.buildHistoryEmbed('Applicant', applicantId, history) };
-        }
-        return { error: 'Invalid action' };
     }
     async handleModal(request) {
         const { appId, action, reason, staffId } = request;
+        if (this.processingApps.has(appId)) {
+            return { error: 'This application is currently being processed by another staff member.' };
+        }
         const app = await Application_1.default.getApplicationById(appId);
         if (!app)
             return { error: 'Application not found' };
         if (app.status !== 'pending' && app.status !== 'review') {
-            return { error: 'Application has already been processed.' };
+            return { error: 'This application has already been finalized.' };
         }
-        if (action === 'reject') {
-            console.log(`[ReviewManager] App #${appId} rejected by ${staffId}. Reason: ${reason}`);
-            await Application_1.default.updateStatus(appId, 'rejected');
-            // Determine cooldown from form settings
-            const form = RPForms_1.RPForms.forms.getForm(app.form_id);
-            const cooldownHours = form?.actions?.onReject?.cooldownHours || 24;
-            const cooldownMs = cooldownHours * 60 * 60 * 1000;
-            const cooldownUntil = new Date(Date.now() + cooldownMs);
-            await User_1.default.setCooldown(app.discord_id, cooldownUntil);
-            RPForms_1.RPForms.events.emit('applicationReject', request);
-            return { success: true };
+        this.processingApps.add(appId);
+        try {
+            if (action === 'reject') {
+                const success = await Application_1.default.updateStatus(appId, 'rejected');
+                if (!success)
+                    return { error: 'This application has already been finalized.' };
+                console.log(`[ReviewManager] App #${appId} rejected by ${staffId}. Reason: ${reason}`);
+                // Determine cooldown from form settings
+                const form = RPForms_1.RPForms.forms.getForm(app.form_id);
+                const cooldownHours = form?.actions?.onReject?.cooldownHours || 24;
+                const cooldownMs = cooldownHours * 60 * 60 * 1000;
+                const cooldownUntil = new Date(Date.now() + cooldownMs);
+                await User_1.default.setCooldown(app.discord_id, cooldownUntil);
+                RPForms_1.RPForms.events.emit('applicationReject', request);
+                return { success: true };
+            }
+            else if (action === 'review') {
+                const success = await Application_1.default.updateStatus(appId, 'review');
+                if (!success)
+                    return { error: 'This application has already been finalized.' };
+                console.log(`[ReviewManager] App #${appId} needs review requested by ${staffId}. Reason: ${reason}`);
+                RPForms_1.RPForms.events.emit('applicationReviewRequest', request);
+                return { success: true };
+            }
+            return { error: 'Invalid modal action' };
         }
-        else if (action === 'review') {
-            console.log(`[ReviewManager] App #${appId} needs review requested by ${staffId}. Reason: ${reason}`);
-            await Application_1.default.updateStatus(appId, 'review');
-            RPForms_1.RPForms.events.emit('applicationReviewRequest', request);
-            return { success: true };
+        finally {
+            this.processingApps.delete(appId);
         }
-        return { error: 'Invalid modal action' };
     }
     async submitApplication(appId, applicantStr, applicantId) {
         const app = await Application_1.default.getApplicationById(appId);
         if (!app)
             return { error: 'Application not found' };
-        await Application_1.default.updateStatus(appId, 'review');
+        const success = await Application_1.default.updateStatus(appId, 'review');
+        if (!success)
+            return { error: 'Application could not be submitted because it is already active.' };
         const answers = await Answer_1.default.getAnswers(appId);
         const form = RPForms_1.RPForms.forms.getForm(app.form_id);
         const questions = form ? form.questions : [];
         const staffChannelId = form?.review?.channelId || RPForms_1.RPForms.config.getAll().channels.staffReviewChannel || RPForms_1.RPForms.config.getAll().channels.applicationCategory;
-        await Application_1.default.updateStatus(appId, 'review', staffChannelId);
+        await Application_1.default.updateStatus(appId, 'review', staffChannelId); // this is safe as it just updates the channel ID
         RPForms_1.RPForms.events.emit('applicationSubmit', { appId, applicantId });
         const history = await Application_1.default.getApplicationHistory(applicantId);
         const historyInfo = {

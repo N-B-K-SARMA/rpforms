@@ -4,14 +4,14 @@ import { RPForms } from '../core/RPForms';
 export class ReviewUIBuilder {
     static buildStaffReviewEmbed(applicantStr: string, applicantId: string, appId: number, questions: any[], answers: any[], historyInfo?: { total: number, approved: number, rejected: number }) {
         const embed = new EmbedBuilder()
-            .setTitle(`Application Review (#${appId})`)
+            .setTitle(`Application Review #${appId}`)
             .setColor(RPForms.config.getAll().embeds.colors.warning as any)
             .setTimestamp();
 
-        let description = `**Applicant:** ${applicantStr} (<@${applicantId}>)\n**Discord ID:** \`${applicantId}\`\n**Status:** 🟡 Pending Review\n`;
+        let description = `**Applicant**\n<@${applicantId}>\n\n**Discord ID**\n\`${applicantId}\`\n\n**Status**\n🟡 Pending Review\n`;
         
         if (historyInfo) {
-            description += `\n**History:** ${historyInfo.total} Total | ${historyInfo.approved} Approved | ${historyInfo.rejected} Rejected`;
+            description += `\n**Application History**\n\`${historyInfo.total} Total • ${historyInfo.approved} Approved • ${historyInfo.rejected} Rejected\`\n`;
         }
 
         embed.setDescription(description);
@@ -19,8 +19,11 @@ export class ReviewUIBuilder {
         for (const q of questions) {
             const a = answers.find((ans) => String(ans.question_id) === String(q.id));
             let displayAnswer = a ? a.answer_text : '*(No answer)*';
-            if (displayAnswer.length > 1024) displayAnswer = displayAnswer.substring(0, 1020) + '...';
-            embed.addFields({ name: q.label || q.question, value: `\`\`\`text\n${displayAnswer}\n\`\`\`` });
+            if (displayAnswer.length > 1000) displayAnswer = displayAnswer.substring(0, 1000) + '... *(Truncated)*';
+            
+            // Use blockquotes for a cleaner UI
+            const formattedAnswer = displayAnswer.split('\n').map(line => `> ${line}`).join('\n');
+            embed.addFields({ name: q.label || q.question, value: formattedAnswer + '\n\u200B' }); // zero-width space for padding
         }
 
         const row = new ActionRowBuilder<any>().addComponents(

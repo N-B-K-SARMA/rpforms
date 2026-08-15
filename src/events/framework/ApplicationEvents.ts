@@ -1,6 +1,7 @@
 import { EmbedBuilder } from 'discord.js';
 import { RPForms } from '../../core/RPForms';
 import ApplicationModel from '../../models/Application';
+import AnswerModel from '../../models/Answer';
 
 export function registerApplicationEvents(client: any) {
     RPForms.events.on('applicationApprove', async (request: any) => {
@@ -41,6 +42,19 @@ export function registerApplicationEvents(client: any) {
             }
         }
 
+        let characterName = undefined;
+        try {
+            const answers = await AnswerModel.getAnswers(appId);
+            // Try to find the character name
+            const charNameQuestion = form.questions?.find((q: any) => q.label?.toLowerCase().includes('character name') || q.question?.toLowerCase().includes('character name'));
+            if (charNameQuestion) {
+                const charNameAnswer = answers.find(a => String(a.question_id) === String(charNameQuestion.id));
+                if (charNameAnswer) characterName = charNameAnswer.answer_text;
+            }
+        } catch (e) {
+            console.warn(`[ApplicationEvents] Failed to fetch answers for app ${appId}`);
+        }
+
         const acceptedEmbed = new EmbedBuilder()
             .setDescription(`Congratulations! Your allow-list application has been accepted. Welcome to Horizon City Roleplay!`)
             .addFields(
@@ -52,12 +66,29 @@ export function registerApplicationEvents(client: any) {
             .setColor(form.embeds?.reviewEmbed?.color || '#00FF00' as any);
 
         if (form.actions.onApprove.sendDM && member) {
-            try { await member.send({ embeds: [acceptedEmbed] }); } catch (e) {}
+            try { await member.send({ embeds: [acceptedEmbed] }); } catch (e) { console.warn(`[ApplicationEvents] Failed to send DM`); }
         }
 
         if (form.actions.onApprove.logChannelId) {
             const channel = guild.channels.cache.get(form.actions.onApprove.logChannelId);
-            if (channel) await channel.send({ embeds: [acceptedEmbed] }).catch(() => {});
+            if (channel) {
+                const logEmbed = new EmbedBuilder()
+                    .setTitle('Application Approved')
+                    .addFields(
+                        { name: 'Applicant', value: `<@${app.discord_id}>`, inline: true },
+                        { name: 'Application', value: `#${appId}`, inline: true },
+                        { name: 'Reviewed By', value: `<@${request.staffId}>`, inline: true }
+                    )
+                    .setColor('#00FF00');
+
+                if (characterName) {
+                    logEmbed.addFields({ name: 'Character', value: characterName, inline: true });
+                }
+
+                logEmbed.addFields({ name: 'Status', value: '🟢 Approved', inline: true });
+
+                await channel.send({ embeds: [logEmbed] }).catch(() => { console.warn(`[ApplicationEvents] Failed to send log`); });
+            }
         }
     });
 
@@ -75,6 +106,19 @@ export function registerApplicationEvents(client: any) {
         let member;
         try { member = await guild.members.fetch(app.discord_id); } catch (e) {}
 
+        let characterName = undefined;
+        try {
+            const answers = await AnswerModel.getAnswers(appId);
+            // Try to find the character name
+            const charNameQuestion = form.questions?.find((q: any) => q.label?.toLowerCase().includes('character name') || q.question?.toLowerCase().includes('character name'));
+            if (charNameQuestion) {
+                const charNameAnswer = answers.find(a => String(a.question_id) === String(charNameQuestion.id));
+                if (charNameAnswer) characterName = charNameAnswer.answer_text;
+            }
+        } catch (e) {
+            console.warn(`[ApplicationEvents] Failed to fetch answers for app ${appId}`);
+        }
+
         const rejectedEmbed = new EmbedBuilder()
             .setDescription(`Unfortunately, your allow-list application has been rejected.\n\n**Reason:**\n${reason}`)
             .addFields(
@@ -91,7 +135,27 @@ export function registerApplicationEvents(client: any) {
 
         if (form.actions.onReject.logChannelId) {
             const channel = guild.channels.cache.get(form.actions.onReject.logChannelId);
-            if (channel) await channel.send({ embeds: [rejectedEmbed] }).catch((e) => { console.warn(`[ApplicationEvents] Failed to send log to ${form.actions.onReject.logChannelId}`, e.message) });
+            if (channel) {
+                const logEmbed = new EmbedBuilder()
+                    .setTitle('Application Rejected')
+                    .addFields(
+                        { name: 'Applicant', value: `<@${app.discord_id}>`, inline: true },
+                        { name: 'Application', value: `#${appId}`, inline: true },
+                        { name: 'Reviewed By', value: `<@${staffId}>`, inline: true }
+                    )
+                    .setColor('#FF0000');
+
+                if (characterName) {
+                    logEmbed.addFields({ name: 'Character', value: characterName, inline: true });
+                }
+
+                logEmbed.addFields({ name: 'Status', value: '🔴 Rejected', inline: true });
+                if (reason) {
+                    logEmbed.addFields({ name: 'Reason', value: reason });
+                }
+
+                await channel.send({ embeds: [logEmbed] }).catch((e) => { console.warn(`[ApplicationEvents] Failed to send log`, e.message) });
+            }
         }
     });
 

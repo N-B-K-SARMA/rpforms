@@ -14,8 +14,8 @@ class ApplicationModel {
     return await RPForms.database.getActiveApplication(discordId);
   }
 
-  static async updateStatus(id: number, status: ApplicationStatus | string, staffChannelId: string | null = null): Promise<void> {
-    await RPForms.database.updateApplicationStatus(id, status, staffChannelId);
+  static async updateStatus(id: number, status: ApplicationStatus | string, staffChannelId: string | null = null): Promise<boolean> {
+    return await RPForms.database.updateApplicationStatus(id, status, staffChannelId);
   }
 
   static async getApplicationHistory(discordId: string): Promise<IApplication[]> {

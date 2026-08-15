@@ -24,9 +24,14 @@ export class MariaDB implements IDatabase {
         const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM applications WHERE discord_id = ? AND status IN (?, ?)', [discordId, ApplicationStatus.PENDING, ApplicationStatus.REVIEW]);
         return rows[0] as IApplication | undefined;
     }
-    async updateApplicationStatus(id: number, status: ApplicationStatus | string, staffChannelId: string | null = null): Promise<void> {
+    async updateApplicationStatus(id: number, status: ApplicationStatus | string, staffChannelId: string | null = null): Promise<boolean> {
         const pool = getPool();
-        await pool.query<ResultSetHeader>('UPDATE applications SET status = ?, staff_channel_id = COALESCE(?, staff_channel_id) WHERE id = ?', [status, staffChannelId, id]);
+        // Atomic update: only allow transition if currently in a non-final state (pending or review)
+        const [result] = await pool.query<ResultSetHeader>(
+            'UPDATE applications SET status = ?, staff_channel_id = COALESCE(?, staff_channel_id) WHERE id = ? AND status IN (?, ?)', 
+            [status, staffChannelId, id, ApplicationStatus.PENDING, ApplicationStatus.REVIEW]
+        );
+        return result.affectedRows > 0;
     }
     async saveAnswer(applicationId: number, questionId: string, answerText: string): Promise<void> {
         const pool = getPool();

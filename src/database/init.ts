@@ -50,7 +50,7 @@ async function createTables() {
             id INT AUTO_INCREMENT PRIMARY KEY,
             discord_id VARCHAR(255) NOT NULL,
             form_id VARCHAR(255) NOT NULL DEFAULT 'allowlist',
-            status ENUM('pending', 'review', 'approved', 'rejected') DEFAULT 'pending',
+            status ENUM('pending', 'review', 'approved', 'rejected', 'closed') DEFAULT 'pending',
             staff_channel_id VARCHAR(255) DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

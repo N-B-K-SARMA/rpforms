@@ -1,5 +1,5 @@
 import { RPForms } from '../core/RPForms';
-import { EmbedBuilder } from 'discord.js';
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder } from 'discord.js';
 import ApplicationModel from '../models/Application';
 
 export default {
@@ -34,6 +34,14 @@ export default {
       reason
     };
 
+    let warningMsg = '';
+    if (form && action === 'reject') {
+        const logChannelId = form.actions?.onReject?.logChannelId;
+        if (logChannelId && !interaction.guild.channels.cache.get(logChannelId)) {
+            warningMsg = '⚠️ The application was rejected, but the configured response log channel could not be found. Please check your configuration.';
+        }
+    }
+
     const result = await RPForms.reviews.handleModal(request);
 
     if (result.success) {
@@ -42,10 +50,27 @@ export default {
         const updatedEmbed = EmbedBuilder.from(originalEmbed);
         updatedEmbed.setColor(RPForms.config.getAll().embeds.colors.danger as any);
         if (updatedEmbed.data.description) {
-            updatedEmbed.setDescription(updatedEmbed.data.description.replace('🟡 Pending Review', '🔴 Rejected'));
+            updatedEmbed.setDescription(updatedEmbed.data.description.replace(/.*Pending Review.*/, '**Status**\n🔴 Rejected'));
         }
         
-        await interaction.update({ embeds: [updatedEmbed], components: [] });
+        const newComponents = interaction.message.components.map((row: any) => {
+            return ActionRowBuilder.from(row).setComponents(
+                row.components.map((c: any) => {
+                    const btn = ButtonBuilder.from(c as any);
+                    const id = c.customId || '';
+                    if (id.includes('staff_approve_') || id.includes('staff_reject_') || id.includes('staff_review_')) {
+                        btn.setDisabled(true);
+                    }
+                    return btn;
+                })
+            );
+        });
+
+        await interaction.update({ embeds: [updatedEmbed], components: newComponents as any[] });
+
+        if (warningMsg) {
+            await interaction.followUp({ content: warningMsg, ephemeral: true });
+        }
       } else if (action === 'review') {
         await interaction.reply({ content: 'Review requested sent to user!', ephemeral: true });
       }
