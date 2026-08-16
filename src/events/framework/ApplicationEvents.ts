@@ -28,7 +28,7 @@ export function registerApplicationEvents(client: any) {
                 for (const roleId of form.actions.onApprove.addRoles) {
                     const role = guild.roles.cache.get(roleId);
                     if (role) {
-                        try { await member.roles.add(role); } catch (e) { console.warn(`[ApplicationEvents] Failed to add role ${roleId}`); }
+                        try { await member.roles.add(role); } catch (e: any) { console.warn(`[ApplicationEvents] Failed to add role ${roleId}:`, e.message); }
                     }
                 }
             }
@@ -36,7 +36,7 @@ export function registerApplicationEvents(client: any) {
                 for (const roleId of form.actions.onApprove.removeRoles) {
                     const role = guild.roles.cache.get(roleId);
                     if (role && member.roles.cache.has(role.id)) {
-                        try { await member.roles.remove(role); } catch (e) { console.warn(`[ApplicationEvents] Failed to remove role ${roleId}`); }
+                        try { await member.roles.remove(role); } catch (e: any) { console.warn(`[ApplicationEvents] Failed to remove role ${roleId}:`, e.message); }
                     }
                 }
             }
